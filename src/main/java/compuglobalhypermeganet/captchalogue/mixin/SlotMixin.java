@@ -8,11 +8,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.mojang.datafixers.util.Pair;
+
+import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.container.Slot;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 
 /**
  * Captchalogue works by blocking all player slots except for the one we can pull items from.
@@ -32,43 +39,97 @@ public class SlotMixin {
 	@Shadow @Final private int invSlot;
 	@Shadow @Final public Inventory inventory;
 	
+	private boolean isPlayerSlot() {
+		return inventory instanceof PlayerInventory && invSlot < ((PlayerInventory)inventory).main.size();
+	}
+	
 	@Inject(at = @At(value="HEAD"), method="canTakeItems(Lnet/minecraft/entity/player/PlayerEntity;)Z", cancellable=true)
 	private void blockTakeItemsNonModusSlots(CallbackInfoReturnable<Boolean> info) {
-		if(inventory instanceof PlayerInventory) {
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(invSlot)) {
+		if(isPlayerSlot()) {
+			if (invSlot == FetchModus.MODUS_SLOT)
+				return;
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot((PlayerInventory)inventory, invSlot)) {
 				info.setReturnValue(false);
 			}
 		}
 	}
 	
 	@Inject(at = @At(value="HEAD"), method="canInsert(Lnet/minecraft/item/ItemStack;Z)Z", cancellable=true)
-	private void blockInsertIntoNonModusSlots(CallbackInfoReturnable<Boolean> info) {
-		if(inventory instanceof PlayerInventory) {
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(invSlot)) {
+	private void blockInsertIntoNonModusSlots(ItemStack item, CallbackInfoReturnable<Boolean> info) {
+		if(isPlayerSlot()) {
+			if (invSlot == FetchModus.MODUS_SLOT) {
+				if (!FetchModus.isModus(item))
+					info.setReturnValue(false);
+				return;
+			}
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot((PlayerInventory)inventory, invSlot)) {
 				info.setReturnValue(false);
 			}
 		}
 	}
 	
-	@Inject(at = @At(value="HEAD"), method="getStack()Lnet/minecraft/item/ItemStack;", cancellable=true)
+	/*@Inject(at = @At(value="HEAD"), method="getStack()Lnet/minecraft/item/ItemStack;", cancellable=true)
 	private void overrideGetStack(CallbackInfoReturnable<ItemStack> info) {
 		if(inventory instanceof PlayerInventory) {
 			info.setReturnValue(((IPlayerInventoryMixin)inventory).getFetchModus().getStackInSlot(invSlot));
 		}
-	}
+	}*/
 	
 	@Inject(at = @At(value="HEAD"), method="setStack(Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	private void overrideSetStack(ItemStack stack, CallbackInfo info) {
-		if(inventory instanceof PlayerInventory) {
-			((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot(invSlot, stack);
-			info.cancel();
+		if(isPlayerSlot()) {
+			if (invSlot == FetchModus.MODUS_SLOT) {
+				IPlayerInventoryMixin m = (IPlayerInventoryMixin)inventory;
+				// TODO: what should happen if the player has no modus or if the wrong item is somehow inserted here? They should get a null modus.
+				//if (!stack.isEmpty() && FetchModus.isModus(stack)) {
+					//m.setFetchModus(FetchModus.createModus(stack));
+					m.getFetchModus().initialize((PlayerInventory)inventory);
+				//}
+				return;
+			}
+			if (((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, stack))
+				info.cancel();
 		}
 	}
 	
-	@Inject(at = @At(value="HEAD"), method="takeStack(I)Lnet/minecraft/item/ItemStack;", cancellable=true)
-	private void overrideTakeStack(int count, CallbackInfoReturnable<ItemStack> info) {
-		if(inventory instanceof PlayerInventory) {
-			info.setReturnValue(((IPlayerInventoryMixin)inventory).getFetchModus().takeItemsFromSlot(invSlot, count));
+	// In one case - where you click on a take-able, non-insertable slot and you are holding the same item - Minecraft will
+	// directly update the item stack count without calling setStack.
+	// markDirty is still called afterwards, so we hook that.
+	// TODO: maybe we should wait until markDirty to move ANY items to their fetchModus locations? That might also fix dragging? But other mods don't call markDirty...
+	@Inject(at = @At(value="HEAD"), method="markDirty()V")
+	private void onMarkDirty(CallbackInfo info) {
+		if (isPlayerSlot()) {
+			if (invSlot == FetchModus.MODUS_SLOT)
+				return;
+			if (inventory.getInvStack(invSlot).isEmpty()) {
+				// This call might be redundant, or it might not...
+				((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, ItemStack.EMPTY);
+			}
 		}
 	}
+	
+	@Inject(at = @At(value="HEAD"), method="getBackgroundSprite()Lcom/mojang/datafixers/util/Pair;", cancellable=true)
+	@Environment(EnvType.CLIENT)
+	public void getBackgroundSprite(CallbackInfoReturnable<Pair<Identifier, Identifier>> info) {
+		if (isPlayerSlot()) {
+			if(invSlot == FetchModus.MODUS_SLOT) {
+				info.setReturnValue(new Pair<Identifier, Identifier>(SpriteAtlasTexture.BLOCK_ATLAS_TEX, FetchModus.MODUS_SLOT_BG_IMAGE));
+			}
+		}
+	}
+	
+	// TODO: fix drag-inserting.
+	// TODO: fix shift-clicking.
+	
+	// TODO: this hook is probably not needed since takeStack is only called if canTakeItems returns true anyway
+	// TODO: maybe we should override it so you only take 1 at a time, since you can't easily put items back
+	/*@Inject(at = @At(value="HEAD"), method="takeStack(I)Lnet/minecraft/item/ItemStack;", cancellable=true)
+	private void overrideTakeStack(int count, CallbackInfoReturnable<ItemStack> info) {
+		if(isPlayerSlot()) {
+			FetchModus modus = ((IPlayerInventoryMixin)inventory).getFetchModus();
+			if (!modus.canTakeFromSlot((PlayerInventory)inventory, invSlot))
+				info.setReturnValue(ItemStack.EMPTY);
+			//info.setReturnValue(modus.takeItemsFromSlot(invSlot, count));
+		}
+	}*/
 }

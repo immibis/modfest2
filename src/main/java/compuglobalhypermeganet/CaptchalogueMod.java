@@ -15,7 +15,8 @@ public class CaptchalogueMod implements ModInitializer {
 			new Identifier("compuglobalhypermeganet", "captchalogue"),
 			() -> new ItemStack(Blocks.COBBLESTONE));
 	
-	public static final Item itemQueueFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue));
+	public static final Item itemQueueFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemStackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	
 	@Override
 	public void onInitialize() {
@@ -23,8 +24,7 @@ public class CaptchalogueMod implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-		System.out.println("Hello Fabric world!");
-		
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queue_fetch_modus"), itemQueueFetchModus);
+		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "stack_fetch_modus"), itemStackFetchModus);
 	}
 }

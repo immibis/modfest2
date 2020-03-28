@@ -20,6 +20,9 @@
   "entrypoints": {
     "main": [
       "compuglobalhypermeganet.CaptchalogueMod"
+    ],
+    "client": [
+      "compuglobalhypermeganet.CaptchalogueModClient"
     ]
   },
   "mixins": [

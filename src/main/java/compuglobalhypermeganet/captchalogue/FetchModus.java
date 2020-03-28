@@ -1,139 +1,231 @@
 package compuglobalhypermeganet.captchalogue;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import compuglobalhypermeganet.CaptchalogueMod;
 import net.minecraft.container.Container;
-import net.minecraft.inventory.Inventories;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.util.Identifier;
 
 public abstract class FetchModus {
 	
+	public static final int MODUS_SLOT = 8;
+	public static final Identifier MODUS_SLOT_BG_IMAGE = new Identifier("compuglobalhypermeganet", "placeholder_fetch_modus");
+	
+	static void compactItemsToLowerIndices(PlayerInventory inventory, int start) {
+		int to = start;
+		int from = start;
+		while(from < inventory.main.size()) {
+			if(from != MODUS_SLOT && !inventory.main.get(from).isEmpty()) {
+				if (from != to)
+					inventory.main.set(to, inventory.main.get(from));
+				to++;
+				if(to == MODUS_SLOT)
+					to++;
+			}
+			from++;
+		}
+		while(to < inventory.main.size()) {
+			inventory.main.set(to, ItemStack.EMPTY);
+			to++;
+			if(to == MODUS_SLOT)
+				to++;
+		}
+	}
+	
 	public static class Queue extends FetchModus {
-		public List<ItemStack> items = new ArrayList<>(0); // ArrayList even though it's a queue, because we do a lot more random access than deletion.
 		@Override
-		protected void deserialize(List<ItemStack> items, CompoundTag tag) {
-			// Queue is used as a last resort when the correct modus can't be loaded, so we may have empty itemstacks in the list being deserialized,
-			// even though Queue can't add those. Remove them.
-			items.removeIf(ItemStack::isEmpty);
-			this.items = items;
-		}
-		@Override
-		protected void serialize(List<ItemStack> items, CompoundTag tag) {
-			items.addAll(this.items);
-		}
-		@Override
-		protected String getSerializedType() {
-			return "queue";
+		public void initialize(PlayerInventory inventory) {
+			compactItemsToLowerIndices(inventory, 0);
 		}
 		
 		@Override
-		public boolean canTakeFromSlot(int slot) {
+		public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
 			return slot == 0;
 		}
 		@Override
-		public boolean canInsertToSlot(int slot) {
-			return slot >= items.size(); // any slot past the end is counted as the end
+		public boolean canInsertToSlot(PlayerInventory inv, int slot) {
+			return inv.main.get(slot).isEmpty();
 		}
+		
 		@Override
-		public ItemStack getStackInSlot(int slot) {
-			return slot < items.size() ? items.get(slot) : ItemStack.EMPTY;
-		}
-		@Override
-		public void setStackInSlot(int slot, ItemStack stack) {
+		public boolean setStackInSlot(PlayerInventory inv, int slot, ItemStack stack) {
 			if (stack.isEmpty()) {
-				// Should only be slot 0, but just in case
-				if (slot < items.size())
-					items.remove(slot);
-				return;
+				// Remove item; move existing items down.
+				inv.main.set(slot, ItemStack.EMPTY);
+				compactItemsToLowerIndices(inv, 0);
+				return true;
 			}
-			if (slot == 0 && items.size() > 0)
-				items.set(0, stack);
-			else {
-				if (items.size() > 0) {
-					ItemStack existingLast = items.get(items.size() - 1);
-					if (Container.canStacksCombine(stack, existingLast)) {
-						int ntransfer = Math.max(stack.getMaxCount() - existingLast.getCount(), stack.getCount());
-						if (ntransfer > 0) {
-							existingLast.increment(ntransfer);
-							stack.decrement(ntransfer);
-							if (stack.getCount() <= 0)
-								return;
-						}
-					}
+			
+			if (!inv.main.get(slot).isEmpty())
+				return false; // either decrement of an accessible stack, or invalid access we couldn't block...
+			
+			for (int k = 0; k < inv.main.size(); k++) {
+				if (k != MODUS_SLOT && inv.main.get(k).isEmpty()) {
+					inv.setInvStack(k, stack);
+					return true;
 				}
-				items.add(stack);
+			}
+			return false;
+		}
+		
+		@Override
+		public boolean hasCustomInsert() {
+			return true;
+		}
+		
+		private int getLastFilledSlot(PlayerInventory inv) {
+			int lastFilled = 0; // return 0 if inventory is totally empty
+			for(int k = 0; k < inv.main.size(); k++) {
+				if (k != MODUS_SLOT && !inv.main.get(k).isEmpty())
+					lastFilled = k;
+			}
+			return lastFilled;
+		}
+		
+		@Override
+		public void insert(PlayerInventory inv, ItemStack stack) {
+			ItemStack curStackLast = inv.main.get(getLastFilledSlot(inv));
+			if(!curStackLast.isEmpty() && Container.canStacksCombine(curStackLast, stack)) {
+				int ntransfer = Math.min(stack.getCount(), curStackLast.getMaxCount() - curStackLast.getCount());
+				curStackLast.increment(ntransfer);
+				stack.decrement(ntransfer);
+				if(stack.getCount() == 0)
+					return;
+			}
+			for(int k = 0; k < inv.main.size(); k++) {
+				if (inv.main.get(k).isEmpty()) {
+					setStackInSlot(inv, k, stack);
+					stack.setCount(0);
+					return;
+				}
+			}
+		}
+	}
+	
+	public static class Stack extends FetchModus {
+		@Override
+		public void initialize(PlayerInventory inventory) {
+			compactItemsToLowerIndices(inventory, 0);
+		}
+		
+		@Override
+		public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
+			return slot == 0;
+		}
+		@Override
+		public boolean canInsertToSlot(PlayerInventory inv, int slot) {
+			return inv.main.get(slot).isEmpty();
+		}
+		
+		@Override
+		public boolean setStackInSlot(PlayerInventory inv, int slot, ItemStack stack) {
+			if (stack.isEmpty()) {
+				return false; // no override needed - items don't need to be shifted
+			}
+			
+			if (!inv.main.get(slot).isEmpty())
+				return false; // either decrement of an accessible stack, or invalid access we couldn't block...
+			
+			// Shift items up
+			for (int k = inv.main.size() - 1; k >= 0; k--) {
+				int from = (k-1 == MODUS_SLOT ? k-2 : k-1);
+				inv.main.set(k, inv.main.get(from));
+			}
+			// insert new item
+			inv.main.set(0, stack);
+			
+			return false;
+		}
+		
+		@Override
+		public boolean hasCustomInsert() {
+			return true;
+		}
+		
+		@Override
+		public void insert(PlayerInventory inv, ItemStack stack) {
+			ItemStack curStack0 = inv.main.get(0);
+			if(!curStack0.isEmpty() && Container.canStacksCombine(curStack0, stack)) {
+				int ntransfer = Math.min(stack.getCount(), curStack0.getMaxCount() - curStack0.getCount());
+				curStack0.increment(ntransfer);
+				stack.decrement(ntransfer);
+				if(stack.getCount() == 0)
+					return;
+			}
+			for(int k = 0; k < inv.main.size(); k++) {
+				if (inv.main.get(k).isEmpty()) {
+					setStackInSlot(inv, k, stack);
+					stack.setCount(0);
+					return;
+				}
+			}
+		}
+	}
+	
+	public static class Null extends FetchModus {
+		@Override
+		public boolean canInsertToSlot(PlayerInventory inv, int slot) {
+			return false;
+		}
+		@Override
+		public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
+			return false;
+		}
+		@Override
+		public void initialize(PlayerInventory inventory) {
+			for(int k = 0; k < inventory.main.size(); k++) {
+				if(k != MODUS_SLOT) {
+					if (!inventory.player.world.isClient()) {
+						inventory.player.dropItem(inventory.main.get(k), true, false);
+					}
+					inventory.main.set(k, ItemStack.EMPTY);
+				}
 			}
 		}
 		@Override
-		public ItemStack takeItemsFromSlot(int slot, int count) {
-			if (slot > 0)
-				return ItemStack.EMPTY;
-			return Inventories.splitStack(items, slot, count);
+		public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {
+			inventory.player.dropItem(stack, true, false); // can't hold any items!
+			return true;
+		}
+		
+		@Override
+		public boolean hasCustomInsert() {
+			return true;
+		}
+		@Override
+		public void insert(PlayerInventory inv, ItemStack stack) {
+			// no-op
 		}
 	}
 
-	protected abstract String getSerializedType();
-	protected abstract void serialize(List<ItemStack> items, CompoundTag tag);
-	protected abstract void deserialize(List<ItemStack> items, CompoundTag tag);
-	public abstract boolean canTakeFromSlot(int slot);
-	public abstract boolean canInsertToSlot(int slot);
-	public abstract ItemStack getStackInSlot(int slot);
-	public abstract void setStackInSlot(int slot, ItemStack stack);
-	public abstract ItemStack takeItemsFromSlot(int slot, int count);
+	public abstract boolean canTakeFromSlot(PlayerInventory inv, int slot);
+	public abstract boolean canInsertToSlot(PlayerInventory inv, int slot);
+	public abstract boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack); // return true to override
+	public abstract void initialize(PlayerInventory inventory);
 	
-	public static CompoundTag serialize(FetchModus fetchModus) {
-		CompoundTag specificTag = new CompoundTag();
-		List<ItemStack> items = new ArrayList<>(0);
-		fetchModus.serialize(items, specificTag);
-		
-		ListTag itemsTag = new ListTag();
-		for(int k = 0; k < items.size(); k++) {
-			if(!items.get(k).isEmpty()) {
-				CompoundTag itemTag = new CompoundTag();
-				itemTag.putInt("Slot", k);
-				items.get(k).toTag(itemTag);
-				itemsTag.add(itemTag);
-			}
-		}
-		
-		CompoundTag outerTag = new CompoundTag();
-		outerTag.put("Specific", specificTag);
-		outerTag.putInt("ItemsCount", items.size());
-		outerTag.put("Items", itemsTag);
-		return specificTag;
+	public static FetchModus getModus(PlayerInventory inventory) {
+		ItemStack modus = inventory.getInvStack(MODUS_SLOT);
+		return getFlyweightModus(modus);
 	}
-
-	public static FetchModus deserialize(CompoundTag tag) {
-		String type = tag.getString("Type");
-		
-		List<ItemStack> items = new ArrayList<>(tag.getInt("ItemsCount"));
-		ListTag itemsTag = tag.getList("Items", 10 /*compound*/);
-		Collections.fill(items, ItemStack.EMPTY);
-		for(int k = 0; k < itemsTag.size(); k++) {
-			CompoundTag itemTag = itemsTag.getCompound(k);
-			int slot = itemTag.getInt("Slot");
-			if (slot < 0 || slot >= items.size())
-				new Exception("corrupted FetchModus serialization (out-of-range slot "+slot+"/"+items.size()+")").printStackTrace();
-			else
-				items.set(slot, ItemStack.fromTag(itemTag));
-		}
-		
-		CompoundTag specificData = tag.getCompound("Specific");
-		
-		FetchModus modus;
-		if(type.equals("queue")) {
-			modus = new Queue();
-		} else {
-			new Exception("Unrecognized FetchModus type: "+type+". Resetting to default...");
-			modus = new Queue();
-			specificData = new CompoundTag(); // don't try to load unknown Specific data as queue. Queue has no Specific data anyway
-		}
-		
-		modus.deserialize(items, specificData);
-		return modus;
+	
+	public static boolean isModus(ItemStack stack) {
+		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus)
+			return true;
+		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus)
+			return true;
+		return false;
 	}
+	
+	public static FetchModus QUEUE = new Queue();
+	public static FetchModus STACK = new Stack();
+	public static FetchModus NULL = new Null();
+	public static FetchModus getFlyweightModus(ItemStack stack) {
+		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus)
+			return QUEUE;
+		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus)
+			return STACK;
+		return NULL;
+	}
+	public abstract boolean hasCustomInsert();
+	public abstract void insert(PlayerInventory inv, ItemStack stack);
 }
