@@ -11,6 +11,8 @@ public abstract class FetchModus {
 	public static final int MODUS_SLOT = 8;
 	public static final Identifier MODUS_SLOT_BG_IMAGE = new Identifier("compuglobalhypermeganet", "placeholder_fetch_modus");
 	
+	public static ThreadLocal<Boolean> isProcessingPacket = ThreadLocal.withInitial(() -> Boolean.FALSE);
+	
 	static void compactItemsToLowerIndices(PlayerInventory inventory, int start) {
 		int to = start;
 		int from = start;
@@ -49,6 +51,7 @@ public abstract class FetchModus {
 		
 		@Override
 		public boolean setStackInSlot(PlayerInventory inv, int slot, ItemStack stack) {
+			// TODO: don't process moduses when receiving inventory contents from the server.
 			if (stack.isEmpty()) {
 				// Remove item; move existing items down.
 				inv.main.set(slot, ItemStack.EMPTY);
@@ -94,11 +97,15 @@ public abstract class FetchModus {
 			}
 			for(int k = 0; k < inv.main.size(); k++) {
 				if (inv.main.get(k).isEmpty()) {
-					setStackInSlot(inv, k, stack);
+					inv.setInvStack(k, stack.copy());
 					stack.setCount(0);
 					return;
 				}
 			}
+		}
+		@Override
+		public boolean forceRightClickOneItem() {
+			return true;
 		}
 	}
 	
@@ -120,21 +127,17 @@ public abstract class FetchModus {
 		@Override
 		public boolean setStackInSlot(PlayerInventory inv, int slot, ItemStack stack) {
 			if (stack.isEmpty()) {
-				return false; // no override needed - items don't need to be shifted
+				inv.main.set(slot, stack);
+				compactItemsToLowerIndices(inv, slot);
+				return true;
 			}
 			
 			if (!inv.main.get(slot).isEmpty())
 				return false; // either decrement of an accessible stack, or invalid access we couldn't block...
 			
-			// Shift items up
-			for (int k = inv.main.size() - 1; k >= 0; k--) {
-				int from = (k-1 == MODUS_SLOT ? k-2 : k-1);
-				inv.main.set(k, inv.main.get(from));
-			}
-			// insert new item
-			inv.main.set(0, stack);
-			
-			return false;
+			// TODO: why does this duplicate items?
+			insert(inv, stack.copy());
+			return true;
 		}
 		
 		@Override
@@ -147,18 +150,36 @@ public abstract class FetchModus {
 			ItemStack curStack0 = inv.main.get(0);
 			if(!curStack0.isEmpty() && Container.canStacksCombine(curStack0, stack)) {
 				int ntransfer = Math.min(stack.getCount(), curStack0.getMaxCount() - curStack0.getCount());
-				curStack0.increment(ntransfer);
-				stack.decrement(ntransfer);
-				if(stack.getCount() == 0)
-					return;
+				if(ntransfer > 0) {
+					curStack0.increment(ntransfer);
+					stack.decrement(ntransfer);
+					if(stack.getCount() == 0)
+						return;
+				}
 			}
+			System.out.println("insert("+stack+")");
 			for(int k = 0; k < inv.main.size(); k++) {
 				if (inv.main.get(k).isEmpty()) {
-					setStackInSlot(inv, k, stack);
+					
+					// Shift items up
+					for (int i = inv.main.size() - 1; i >= 0; i--) {
+						if(i == MODUS_SLOT)
+							continue;
+						int from = (i-1 == MODUS_SLOT ? i-2 : i-1);
+						if (from >= 0)
+							inv.main.set(i, inv.main.get(from));
+					}
+					// insert new item
+					inv.main.set(MODUS_SLOT == 0 ? 1 : 0, stack.copy());
+					
 					stack.setCount(0);
 					return;
 				}
 			}
+		}
+		@Override
+		public boolean forceRightClickOneItem() {
+			return true;
 		}
 	}
 	
@@ -176,7 +197,8 @@ public abstract class FetchModus {
 			for(int k = 0; k < inventory.main.size(); k++) {
 				if(k != MODUS_SLOT) {
 					if (!inventory.player.world.isClient()) {
-						inventory.player.dropItem(inventory.main.get(k), true, false);
+						// TODO: was true, false. Second parameter makes items drop in a much bigger range; third parameter sets the thrower?
+						inventory.player.dropItem(inventory.main.get(k), false, true);
 					}
 					inventory.main.set(k, ItemStack.EMPTY);
 				}
@@ -184,8 +206,12 @@ public abstract class FetchModus {
 		}
 		@Override
 		public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {
-			inventory.player.dropItem(stack, true, false); // can't hold any items!
-			return true;
+			if(inventory.player.world.isClient() || stack.isEmpty())
+				return false; // note that we often get here before the fetch modus item loads in on the client
+			else {
+				inventory.player.dropItem(stack, true, false); // can't hold any items!
+				return true;
+			}
 		}
 		
 		@Override
@@ -195,6 +221,40 @@ public abstract class FetchModus {
 		@Override
 		public void insert(PlayerInventory inv, ItemStack stack) {
 			// no-op
+		}
+		@Override
+		public boolean forceRightClickOneItem() {
+			return false; // doesn't matter since no items can be stored
+		}
+	}
+	
+	public static class Array extends FetchModus {
+		@Override
+		public boolean canInsertToSlot(PlayerInventory inv, int slot) {
+			return true;
+		}
+		@Override
+		public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
+			return true;
+		}
+		@Override
+		public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {
+			return false;
+		}
+		@Override
+		public void initialize(PlayerInventory inventory) {
+		}
+		@Override
+		public boolean hasCustomInsert() {
+			return false;
+		}
+		@Override
+		public void insert(PlayerInventory inv, ItemStack stack) {
+			throw new AssertionError("unreachable");
+		}
+		@Override
+		public boolean forceRightClickOneItem() {
+			return false;
 		}
 	}
 
@@ -209,23 +269,23 @@ public abstract class FetchModus {
 	}
 	
 	public static boolean isModus(ItemStack stack) {
-		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus)
-			return true;
-		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus)
-			return true;
+		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return true;
+		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return true;
+		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return true;
 		return false;
 	}
 	
 	public static FetchModus QUEUE = new Queue();
 	public static FetchModus STACK = new Stack();
+	public static FetchModus ARRAY = new Array();
 	public static FetchModus NULL = new Null();
 	public static FetchModus getFlyweightModus(ItemStack stack) {
-		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus)
-			return QUEUE;
-		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus)
-			return STACK;
+		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return QUEUE;
+		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return STACK;
+		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return ARRAY;
 		return NULL;
 	}
 	public abstract boolean hasCustomInsert();
 	public abstract void insert(PlayerInventory inv, ItemStack stack);
+	public abstract boolean forceRightClickOneItem();
 }

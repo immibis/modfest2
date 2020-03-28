@@ -77,13 +77,18 @@ public class SlotMixin {
 	
 	@Inject(at = @At(value="HEAD"), method="setStack(Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	private void overrideSetStack(ItemStack stack, CallbackInfo info) {
-		if(isPlayerSlot()) {
+		if (isPlayerSlot()) {
+			if (FetchModus.isProcessingPacket.get())
+				return; // When the server is sending us the inventory state, no silly business - just replicate exactly what the server says.
+
 			if (invSlot == FetchModus.MODUS_SLOT) {
 				IPlayerInventoryMixin m = (IPlayerInventoryMixin)inventory;
 				// TODO: what should happen if the player has no modus or if the wrong item is somehow inserted here? They should get a null modus.
 				//if (!stack.isEmpty() && FetchModus.isModus(stack)) {
 					//m.setFetchModus(FetchModus.createModus(stack));
-					m.getFetchModus().initialize((PlayerInventory)inventory);
+				((PlayerInventory)inventory).main.set(FetchModus.MODUS_SLOT, stack);
+				m.getFetchModus().initialize((PlayerInventory)inventory);
+				info.cancel();
 				//}
 				return;
 			}
@@ -118,18 +123,18 @@ public class SlotMixin {
 		}
 	}
 	
-	// TODO: fix drag-inserting.
-	// TODO: fix shift-clicking.
-	
-	// TODO: this hook is probably not needed since takeStack is only called if canTakeItems returns true anyway
-	// TODO: maybe we should override it so you only take 1 at a time, since you can't easily put items back
-	/*@Inject(at = @At(value="HEAD"), method="takeStack(I)Lnet/minecraft/item/ItemStack;", cancellable=true)
+	// Commented: This doesn't work, because Container doesn't check whether takeStack returned the requested number of items.
+	/*
+	// For certain fetch modii, right-click only takes one item. Otherwise it would be impossible to not grab too many items at once.
+	@Inject(at = @At(value="HEAD"), method="takeStack(I)Lnet/minecraft/item/ItemStack;", cancellable=true)
 	private void overrideTakeStack(int count, CallbackInfoReturnable<ItemStack> info) {
 		if(isPlayerSlot()) {
 			FetchModus modus = ((IPlayerInventoryMixin)inventory).getFetchModus();
-			if (!modus.canTakeFromSlot((PlayerInventory)inventory, invSlot))
-				info.setReturnValue(ItemStack.EMPTY);
-			//info.setReturnValue(modus.takeItemsFromSlot(invSlot, count));
+			if (modus.forceRightClickOneItem()) {
+				// assume the slot is takeable-from, since the caller already checks for that
+				info.setReturnValue(inventory.takeInvStack(invSlot, 1));
+			}
 		}
-	}*/
+	}
+	*/
 }

@@ -6,7 +6,9 @@
   "mixins": [
     "SlotMixin",
     "PlayerInventoryMixin",
-    "ContainerMixin"
+    "ContainerMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "ServerPlayNetworkHandlerMixin"
   ],
   "client": [
   ],
