@@ -1,6 +1,7 @@
 package compuglobalhypermeganet.captchalogue.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -8,12 +9,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 @Mixin(PlayerInventory.class)
 public class PlayerInventoryMixin implements IPlayerInventoryMixin {
+	
+	@Shadow
+	public int selectedSlot;
+	
 	@Override
 	public FetchModus getFetchModus() {
 		return FetchModus.getModus((PlayerInventory)(Object)this);
@@ -70,5 +76,19 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 				// Proceed to the standard implementation; this may 
 			}
 		}
+	}
+	
+	@Inject(at = @At("HEAD"), method="isUsingEffectiveTool(Lnet/minecraft/block/BlockState;)Z", cancellable=true)
+	public void enforceModus_isUsingEffectiveTool(CallbackInfoReturnable<Boolean> info) {
+		// If the modus won't allow it, pretend we are not using the item in this slot. 
+		if (!getFetchModus().canTakeFromSlot((PlayerInventory)(Object)this, selectedSlot))
+			info.setReturnValue(Boolean.FALSE);
+	}
+	
+	@Inject(at = @At("HEAD"), method="getBlockBreakingSpeed(Lnet/minecraft/block/BlockState;)F", cancellable=true)
+	public void enforceModus_getBlockBreakingSpeed(BlockState block, CallbackInfoReturnable<Float> info) {
+		// If the modus won't allow it, pretend we are not using the item in this slot. 
+		if (!getFetchModus().canTakeFromSlot((PlayerInventory)(Object)this, selectedSlot))
+			info.setReturnValue(Float.valueOf(ItemStack.EMPTY.getMiningSpeed(block)));
 	}
 }

@@ -46,4 +46,15 @@ public class FetchModusNull extends FetchModus {
 	public boolean forceRightClickOneItem() {
 		return false; // doesn't matter since no items can be stored
 	}
+	
+	@Override
+	public boolean overridesGuiSlotVisualConnectivity() {
+		return true;
+	}
+	@Override
+	public int getBackgroundGroupForSlot(int slot) {
+		if(slot == MODUS_SLOT)
+			return BG_GROUP_MODUS;
+		return BG_GROUP_INVISIBLE;
+	}
 }

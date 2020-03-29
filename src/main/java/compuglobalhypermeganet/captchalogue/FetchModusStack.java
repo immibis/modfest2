@@ -52,7 +52,6 @@ public class FetchModusStack extends FetchModus {
 					return;
 			}
 		}
-		System.out.println("insert("+stack+")");
 		for(int k = 0; k < inv.main.size(); k++) {
 			if (inv.main.get(k).isEmpty()) {
 				
@@ -75,5 +74,22 @@ public class FetchModusStack extends FetchModus {
 	@Override
 	public boolean forceRightClickOneItem() {
 		return true;
+	}
+	
+	@Override
+	public boolean overridesGuiSlotVisualConnectivity() {
+		return true;
+	}
+	
+	@Override
+	public int getBackgroundGroupForSlot(int slot) {
+		if(slot == MODUS_SLOT)
+			return BG_GROUP_MODUS;
+		
+		// don't merge the extractable slot with anything else
+		if(slot == 0)
+			return 0;
+		
+		return 1; // merged rest of hotbar and main inventory
 	}
 }

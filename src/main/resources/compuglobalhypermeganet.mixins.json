@@ -7,10 +7,11 @@
     "SlotMixin",
     "PlayerInventoryMixin",
     "ContainerMixin",
-    "ClientPlayNetworkHandlerMixin",
     "ServerPlayNetworkHandlerMixin"
   ],
   "client": [
+    "ContainerScreenMixin",
+    "ClientPlayNetworkHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

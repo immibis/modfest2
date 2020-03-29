@@ -12,6 +12,7 @@ import com.mojang.datafixers.util.Pair;
 
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
+import compuglobalhypermeganet.captchalogue.ISlotMixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.texture.SpriteAtlasTexture;
@@ -30,7 +31,7 @@ import net.minecraft.util.Identifier;
 
 //@Mixin(ContainerScreen.class)
 @Mixin(Slot.class)
-public class SlotMixin {
+public class SlotMixin implements ISlotMixin {
 	/*@Inject(at = @At(value="INVOKE", shift=At.Shift.AFTER, target="Lnet/minecraft/container/Slot;getStack()Lnet/minecraft/item/ItemStack;"), method = "drawSlot(Lnet/minecraft/container/slot;)V")
 	private void init(CallbackInfo info) {
 		throw new RuntimeException("called getStack");
@@ -38,6 +39,11 @@ public class SlotMixin {
 	
 	@Shadow @Final private int invSlot;
 	@Shadow @Final public Inventory inventory;
+	
+	@Override
+	public int captchalogue_getSlotNum() {
+		return invSlot;
+	}
 	
 	private boolean isPlayerSlot() {
 		return inventory instanceof PlayerInventory && invSlot < ((PlayerInventory)inventory).main.size();

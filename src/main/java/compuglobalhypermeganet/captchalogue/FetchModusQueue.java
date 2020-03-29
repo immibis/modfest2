@@ -77,4 +77,21 @@ public class FetchModusQueue extends FetchModus {
 	public boolean forceRightClickOneItem() {
 		return true;
 	}
+	
+	@Override
+	public boolean overridesGuiSlotVisualConnectivity() {
+		return true;
+	}
+	
+	@Override
+	public int getBackgroundGroupForSlot(int slot) {
+		if(slot == MODUS_SLOT)
+			return BG_GROUP_MODUS;
+		
+		// don't merge the extractable slot with anything else
+		if(slot == 0)
+			return 0;
+		
+		return 1; // merged rest of hotbar and main inventory
+	}
 }
