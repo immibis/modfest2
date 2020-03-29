@@ -431,7 +431,7 @@ public abstract class ContainerScreenMixin extends Screen {
 			if (slot.inventory instanceof PlayerInventory) {
 				PlayerInventory inv = (PlayerInventory)slot.inventory;
 				int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
-				if(slotIndex == FetchModus.MODUS_SLOT)
+				if(slotIndex == FetchModus.MODUS_SLOT || slotIndex < 0 || slotIndex >= 36)
 					return true; // no override
 				
 				FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();

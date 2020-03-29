@@ -76,7 +76,7 @@ public class InventoryUtils {
 			if (modus.blocksAccessToHotbarSlot(lastSelectedSlot)) {
 				lastSelectedSlot = FetchModus.MODUS_SLOT; // last resort slot (even though it's normally blocked)
 				for(int k = 0; k < 9; k++) {
-					if (!modus.blocksAccessToHotbarSlot(lastSelectedSlot)) {
+					if (!modus.blocksAccessToHotbarSlot(k)) {
 						lastSelectedSlot = k;
 						break;
 					}

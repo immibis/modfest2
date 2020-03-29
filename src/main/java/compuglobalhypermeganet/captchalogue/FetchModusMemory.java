@@ -30,11 +30,6 @@ public class FetchModusMemory extends FetchModus {
 	public void initialize(PlayerInventory inventory) {
 	}
 	
-	@Override
-	public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {
-		return false; // no override
-	}
-	
 	@Override public boolean hasCustomInsert() {return false;}
 	@Override public void insert(PlayerInventory inv, ItemStack stack) {throw new AssertionError("unreachable");}
 	

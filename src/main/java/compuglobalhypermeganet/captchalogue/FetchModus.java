@@ -15,11 +15,37 @@ public abstract class FetchModus {
 	
 	/*
 	 * TODO for moduses:
-	 * Indicators for which slots are accessible
+	 * Indicators for which slots are insertable/extractable (based on cursor item)
 	 * Better merging of consecutive identical items
-	 * Shift-click out of a queue/stack shouldn't move several consecutive slots
 	 * Fix creative pick-block
-	 * Fix item duplication when you use up your hotbar slot by using the item (queue modus, test others too)
+	 * Queuestack should allow first or last hotbar slot to be selected
+	 * Queue/stack inventory should have extra borders to make the inventory look like a linear sequence. This requires changing the order of the slots.
+	 * Queuestack might require a different order still in order to use both the first and last in the hotbar. (How would queuestack array do this?)
+	 *
+	 * moduses:
+	 *  Done: Queue
+	 *  Done: Stack
+	 *  Done: Array
+	 *  Done: Memory
+	 *  
+	 *  Queuestack
+	 *  Array of stacks/queues/queuestacks
+	 *  Hashtable
+	 *  Hashtable with arrays/stacks/queues/queuestack
+	 *  Tree
+	 *  
+	 *  ? Array/stack/queue of trees
+	 *  ? Boggle
+	 *  ? Connect Four
+	 *  ? Ouija
+	 *  ? Operation
+	 *  ? Battleship
+	 *  ? Fibonacci Heap
+	 *  ? Puzzle
+	 * 
+	 * ? Sburb loading screen
+	 * 
+	 * Make sure all code safely ignores player inventory slots outside of 0-35 range (no out-of-bounds exceptions)
 	 * 
 	 * Remove all the low-level hooks like setInvStack when possible.
 	 * 
@@ -62,7 +88,7 @@ public abstract class FetchModus {
 	
 	public abstract boolean canTakeFromSlot(PlayerInventory inv, int slot);
 	public abstract boolean canInsertToSlot(PlayerInventory inv, int slot);
-	public abstract boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack); // return true to override
+	public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {return false;} // return true to override
 	public abstract void initialize(PlayerInventory inventory);
 	
 	public static FetchModus getModus(PlayerInventory inventory) {
@@ -136,4 +162,11 @@ public abstract class FetchModus {
 	public static final boolean MODUS_HOTBAR_SLOT_SHOULD_BE_BLOCKED = true; // If true, this would prevent players from throwing their modus for example, without opening their inventory. Or right-clicking things with their modus.
 	public final boolean blocksAccessToHotbarSlot(int slot) {return (slot == MODUS_SLOT ? MODUS_HOTBAR_SLOT_SHOULD_BE_BLOCKED : blocksAccessToHotbarSlot_(slot));}
 	protected boolean blocksAccessToHotbarSlot_(int slot) {return false;}
+
+	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {}
+
+	// Called after an unknown inventory change might have occurred (generally items were removed; other cases are not expected)
+	// E.g. this is called after someone double-clicks to pick up all items of a type and we're not sure whether it picked up any items out of their inventory.
+	// It's also called after an item is used because the item might have been used up.
+	public void afterPossibleInventoryChange(Container cont, PlayerInventory inv) {}
 }

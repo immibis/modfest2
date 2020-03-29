@@ -8,13 +8,15 @@
     "PlayerInventoryMixin",
     "ContainerMixin",
     "ServerPlayNetworkHandlerMixin",
-    "ClickWindowC2SPacketMixin"
+    "ClickWindowC2SPacketMixin",
+    "ServerPlayerInteractionManagerMixin"
   ],
   "client": [
     "ContainerScreenMixin",
     "ClientPlayNetworkHandlerMixin",
     "PlayerInventoryClientMixin",
-    "InGameHudMixin"
+    "InGameHudMixin",
+    "ClientPlayerInteractionManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -13,10 +13,6 @@ public class FetchModusArray extends FetchModus {
 		return true;
 	}
 	@Override
-	public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {
-		return false;
-	}
-	@Override
 	public void initialize(PlayerInventory inventory) {
 	}
 	@Override
