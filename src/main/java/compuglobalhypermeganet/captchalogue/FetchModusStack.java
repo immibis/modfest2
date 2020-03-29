@@ -92,4 +92,9 @@ public class FetchModusStack extends FetchModus {
 		
 		return 1; // merged rest of hotbar and main inventory
 	}
+	
+	@Override
+	protected boolean blocksAccessToHotbarSlot_(int slot) {
+		return slot != 0;
+	}
 }

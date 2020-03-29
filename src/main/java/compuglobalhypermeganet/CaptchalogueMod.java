@@ -18,6 +18,7 @@ public class CaptchalogueMod implements ModInitializer {
 	public static final Item itemQueueFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemStackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemMemoryFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	
 	@Override
 	public void onInitialize() {
@@ -28,5 +29,6 @@ public class CaptchalogueMod implements ModInitializer {
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queue_fetch_modus"), itemQueueFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "stack_fetch_modus"), itemStackFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "array_fetch_modus"), itemArrayFetchModus);
+		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "memory_fetch_modus"), itemMemoryFetchModus);
 	}
 }

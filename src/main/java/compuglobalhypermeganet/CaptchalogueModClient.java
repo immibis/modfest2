@@ -16,6 +16,8 @@ public class CaptchalogueModClient implements ClientModInitializer {
 			@Override
 			public void registerSprites(SpriteAtlasTexture atlasTexture, Registry registry) {
 				registry.register(FetchModus.MODUS_SLOT_BG_IMAGE);
+				registry.register(FetchModus.MEMORY_MODUS_QUESTION_MARK_IMAGE);
+				registry.register(FetchModus.MEMORY_MODUS_CROSS_IMAGE);
 			}
 		});
 	}

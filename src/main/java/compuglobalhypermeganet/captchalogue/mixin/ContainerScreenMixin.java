@@ -205,6 +205,13 @@ public abstract class ContainerScreenMixin extends Screen {
 		System.out.println("draw quad "+x1+","+y1+" "+x2+","+y2);*/
 	}
 	
+	private int mouseX, mouseY;
+	@Inject(at=@At(value="HEAD"), method="render(IIF)V")
+	public void saveMousePosition(int mouseX, int mouseY, float deltaTime, CallbackInfo info) {
+		this.mouseX = mouseX;
+		this.mouseY = mouseY;
+	}
+	
 	@Inject(at=@At(value="INVOKE", shift=At.Shift.AFTER, target="Lnet/minecraft/client/gui/screen/ingame/ContainerScreen;drawBackground(FII)V"), method="render(IIF)V")
 	public void onAfterDrawBackground(CallbackInfo info) {
 		if (unsupportedLayout)
@@ -389,6 +396,10 @@ public abstract class ContainerScreenMixin extends Screen {
 			if(slotNum < 0 || slotNum >= 36 || slotNum == FetchModus.MODUS_SLOT)
 				return;
 			
+			if (modus.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
+				info.cancel();
+			}
+			
 			if(!modus.canTakeFromSlot(inv, slotNum)) {
 				// draw some type of overlay
 				int x = slot.xPosition;
@@ -420,14 +431,19 @@ public abstract class ContainerScreenMixin extends Screen {
 			if (slot.inventory instanceof PlayerInventory) {
 				PlayerInventory inv = (PlayerInventory)slot.inventory;
 				int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
+				if(slotIndex == FetchModus.MODUS_SLOT)
+					return true; // no override
+				
 				FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();
 				
 				boolean holdingItem = !inv.getCursorStack().isEmpty();
 				
 				if ((!holdingItem && !modus.canTakeFromSlot(inv, slotIndex)) || (holdingItem && !modus.canInsertToSlot(inv, slotIndex)) ) {
 					// Set focusedSlot (normally done if this function returns true), but return false to skip the highlight rendering
-					focusedSlot = slot;
-					return false;	
+					
+					// ... unless the modus blocks it (like Memory modus for unrevealed slots!)
+					focusedSlot = modus.overrideFocusedSlot((ContainerScreen<?>)(Object)this, inv, slotIndex, slot);
+					return false;
 				}
 			}
 			return true;

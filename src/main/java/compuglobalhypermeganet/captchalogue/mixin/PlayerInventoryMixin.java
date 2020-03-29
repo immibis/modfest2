@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
+import compuglobalhypermeganet.captchalogue.InventoryUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -90,5 +91,20 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 		// If the modus won't allow it, pretend we are not using the item in this slot. 
 		if (!getFetchModus().canTakeFromSlot((PlayerInventory)(Object)this, selectedSlot))
 			info.setReturnValue(Float.valueOf(ItemStack.EMPTY.getMiningSpeed(block)));
+	}
+	
+	public int lastSelectedSlot;
+	
+	@Inject(at = @At("RETURN"), method="<init>*")
+	public void afterConstruct(CallbackInfo info) {
+		lastSelectedSlot = -1;
+	}
+	
+	// Last resort to detect wrong hotbar slot changes.
+	@Inject(at = @At("HEAD"), method="updateItems()V")
+	public void beforeUpdateItems(CallbackInfo info) {
+		FetchModus modus = getFetchModus();
+		InventoryUtils.ensureSelectedSlotIsUnblocked(modus, (PlayerInventory)(Object)this, lastSelectedSlot, false);
+		lastSelectedSlot = selectedSlot;
 	}
 }

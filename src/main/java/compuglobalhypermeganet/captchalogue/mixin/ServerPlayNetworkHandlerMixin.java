@@ -7,6 +7,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.IClickWindowC2SPacketMixin;
+import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -27,6 +29,13 @@ public class ServerPlayNetworkHandlerMixin {
 	public void wrapOnCreativeInventoryAction2(CallbackInfo info) {
 		if(player.getServerWorld().getServer().isOnThread()) { // otherwise the method just delegates to the main thread and doesn't really do anything
 			FetchModus.isProcessingPacket.set(Boolean.FALSE);
+		}
+	}
+	
+	@Inject(at = @At("HEAD"), method="onClickWindow(Lnet/minecraft/network/packet/c2s/play/ClickWindowC2SPacket;)V")
+	public void extendOnClickWindow(ClickWindowC2SPacket packet, CallbackInfo info) {
+		if(player.getServerWorld().getServer().isOnThread()) { // otherwise the method just delegates to the main thread and doesn't really do anything
+			FetchModus.currentPacketFetchModusState.set(((IClickWindowC2SPacketMixin)packet).captchalogue_getFetchModusState());
 		}
 	}
 }

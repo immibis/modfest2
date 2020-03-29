@@ -7,11 +7,14 @@
     "SlotMixin",
     "PlayerInventoryMixin",
     "ContainerMixin",
-    "ServerPlayNetworkHandlerMixin"
+    "ServerPlayNetworkHandlerMixin",
+    "ClickWindowC2SPacketMixin"
   ],
   "client": [
     "ContainerScreenMixin",
-    "ClientPlayNetworkHandlerMixin"
+    "ClientPlayNetworkHandlerMixin",
+    "PlayerInventoryClientMixin",
+    "InGameHudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

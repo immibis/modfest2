@@ -2,5 +2,6 @@
 	"item.compuglobalhypermeganet.queue_fetch_modus": "Fetch Modus - Queue",
 	"item.compuglobalhypermeganet.stack_fetch_modus": "Fetch Modus - Stack",
 	"item.compuglobalhypermeganet.array_fetch_modus": "Fetch Modus - Array",
+	"item.compuglobalhypermeganet.memory_fetch_modus": "Fetch Modus - Memory",
 	"itemGroup.compuglobalhypermeganet.captchalogue": "Captchalogue"
 }
