@@ -35,8 +35,8 @@ public class CaptchalogueMod implements ModInitializer {
 	// arrays of whatever
 	public static final Item itemQueueArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemStackArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemTreeArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueuestackArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemTreeArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	// array of hashtables is functionally equivalent to hashtable of arrays
 	
 	// hashtables with collision avoidance

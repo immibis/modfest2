@@ -18,9 +18,6 @@ public class FetchModusQueuestack extends FetchModus {
 	// AND: you can insert 
 	// TODO: if we could decouple hotbar logic from inventory rendering, then we wouldn't need to move the last queue slot to the hotbar.
 	
-	// TODO: our logic relies on this being less than MODUS_SLOT since it's used with both InventoryWrapper and PlayerInventory. Fix this.
-	public static final int LAST_ITEM_SLOT = 7;
-	
 	@Override
 	public void initialize(InventoryWrapper inv) {
 		compactItemsToLowerIndices(inv, 0);
@@ -31,6 +28,8 @@ public class FetchModusQueuestack extends FetchModus {
 			if (!inv.getInvStack(highestUsedSlot).isEmpty())
 				break;
 		}
+		
+		final int LAST_ITEM_SLOT = inv.getLastItemSlot();
 		
 		// If it's less than LAST_ITEM_SLOT then just move it up one. LAST_ITEM_SLOT must be unused in this case
 		// However, if there's only one item, it goes preferentially in slot 0.
@@ -53,34 +52,42 @@ public class FetchModusQueuestack extends FetchModus {
 	public void deinitialize(InventoryWrapper inv) {
 		// Form an orderly queue again, none of this LAST_ITEM_SLOT weirdness, so that other moduses can pick up the items in the right order.
 		
-		// If the queue is shorter than LAST_ITEM_SLOT, move LAST_ITEM_SLOT to the first empty slot.
-		for(int k = 0; k < LAST_ITEM_SLOT; k++) {
-			if (inv.getInvStack(k).isEmpty()) {
-				inv.setInvStack(k, inv.getInvStack(LAST_ITEM_SLOT));
-				inv.setInvStack(LAST_ITEM_SLOT, ItemStack.EMPTY);
-				return;
+		final int LAST_ITEM_SLOT = inv.getLastItemSlot();
+		
+		// Move all items down, except for the item in LAST_ITEM_SLOT, which is put aside for now.
+		ItemStack lastItemStack = ItemStack.EMPTY;
+		int to = 0;
+		for(int from = 0; from < inv.getNumSlots(); from++) {
+			ItemStack fromStack = inv.getInvStack(from);
+			if (!fromStack.isEmpty()) {
+				if(from == LAST_ITEM_SLOT)
+					lastItemStack = fromStack;
+				else {
+					if(from != to)
+						inv.setInvStack(to, inv.getInvStack(from));
+					to++;
+				}
 			}
 		}
-		
-		// If the queue is longer than LAST_ITEM_SLOT, move the stack in LAST_ITEM_SLOT to the end, and rotate other items down.
-		ItemStack lastItemSlotStack = inv.getInvStack(LAST_ITEM_SLOT);
-		for(int k = LAST_ITEM_SLOT; k < inv.getNumSlots()-1; k++) {
-			ItemStack nextSlotStack = inv.getInvStack(k+1);
-			if (nextSlotStack.isEmpty()) {
-				inv.setInvStack(k, lastItemSlotStack);
-				break;
-			}
-			else
-				inv.setInvStack(k, nextSlotStack);
+		if (!lastItemStack.isEmpty()) {
+			if(to >= inv.getNumSlots())
+				throw new AssertionError(); // can't happen
+			inv.setInvStack(to, lastItemStack);
+			to++;
+		}
+		for(; to < inv.getNumSlots(); to++) {
+			inv.setInvStack(to, ItemStack.EMPTY);
 		}
 	}
 	
 	@Override
 	public boolean canTakeFromSlot(InventoryWrapper inv, int slot) {
+		final int LAST_ITEM_SLOT = inv.getLastItemSlot();
 		return slot == 0 || slot == LAST_ITEM_SLOT;
 	}
 	@Override
 	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
+		final int LAST_ITEM_SLOT = inv.getLastItemSlot();
 		// only allow one empty slot to be insertable, this is for one-slot item dragging for example.
 		// TODO: this was copied from queue; see how well it does on queuestack
 		if(slot == LAST_ITEM_SLOT) return true;
@@ -88,7 +95,9 @@ public class FetchModusQueuestack extends FetchModus {
 	}
 	
 	@Override
-	public boolean overrideInventoryClick(Container cont, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
+		
+		final int LAST_ITEM_SLOT = inv.getLastItemSlot();
 		
 		// A QuickCraft of one slot must be treated as a pickup, because it's very easy to drag over one slot, and it still gets counted as a QuickCraft.
 		// We can't easily prevent QuickCraft from starting, but if we only make one slot insertable, then that's all the user can use for QuickCrafting.
@@ -108,17 +117,17 @@ public class FetchModusQueuestack extends FetchModus {
 				return false;
 			
 			// Insert items at the end of the queue by clicking anywhere other than slot 0 (even on slots that already have items). Right-click to insert one item.
-			ItemStack cursor = inv.getCursorStack();
+			ItemStack cursor = plinv.getCursorStack();
 			if(!cursor.isEmpty()) {
 				if (clickData == 1 && cursor.getCount() >= 2) {
 					// insert one item
 					ItemStack one = cursor.copy();
 					one.setCount(1);
-					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), one);
+					insert(inv, one);
 					if(one.isEmpty())
 						cursor.decrement(1);
 				} else {
-					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), cursor);
+					insert(inv, cursor);
 				}
 			}
 			return true;
@@ -146,19 +155,17 @@ public class FetchModusQueuestack extends FetchModus {
 	}
 	
 	@Override
-	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public void afterInventoryClick(Container this_, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
 		// Brute force! :)
-		InventoryWrapper wrapper = new InventoryWrapper.PlayerInventorySkippingModusSlot(inv);
-		deinitialize(wrapper);
-		initialize(wrapper);
+		deinitialize(inv);
+		initialize(inv);
 	}
 	
 	@Override
-	public void afterPossibleInventoryChange(Container this_, PlayerInventory inv) {
+	public void afterPossibleInventoryChange(Container this_, InventoryWrapper inv) {
 		// Brute force! :)
-		InventoryWrapper wrapper = new InventoryWrapper.PlayerInventorySkippingModusSlot(inv);
-		deinitialize(wrapper);
-		initialize(wrapper);
+		deinitialize(inv);
+		initialize(inv);
 	}
 	
 	@Override
@@ -177,6 +184,8 @@ public class FetchModusQueuestack extends FetchModus {
 	
 	@Override
 	public void insert(InventoryWrapper inv, ItemStack stack) {
+		final int LAST_ITEM_SLOT = inv.getLastItemSlot();
+		
 		// When you shift-click a slot, the caller checks if all items were moved (stack.isEmpty() after the insert call)
 		// If so, it sets the source slot to empty. Therefore, we can't possibly put a different item into the source slot, because that
 		// will get deleted.
@@ -233,6 +242,9 @@ public class FetchModusQueuestack extends FetchModus {
 		if(slot == CaptchalogueMod.MODUS_SLOT)
 			return BG_GROUP_MODUS;
 		
+		// XXX: we don't have the inventory here to call getLastItemSlot, but it doesn't matter because this function is only called hwen inv is a player inventory
+		final int LAST_ITEM_SLOT = 7;
+		
 		// don't merge the extractable slots with anything else
 		if(slot == 0)
 			return 0;
@@ -244,6 +256,7 @@ public class FetchModusQueuestack extends FetchModus {
 	
 	@Override
 	protected boolean blocksAccessToHotbarSlot_(int slot) {
-		return slot != 0 && slot != LAST_ITEM_SLOT;
+		// XXX: we don't have the inventory here to call getLastItemSlot, but it doesn't matter because this function is only called hwen inv is a player inventory
+		return slot != 0 && slot != 7;
 	}
 }

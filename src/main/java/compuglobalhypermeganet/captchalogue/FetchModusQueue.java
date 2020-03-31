@@ -22,7 +22,7 @@ public class FetchModusQueue extends FetchModus {
 	}
 	
 	@Override
-	public boolean overrideInventoryClick(Container cont, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slot, SlotActionType actionType, int clickData) {
 		
 		// A QuickCraft of one slot must be treated as a pickup, because it's very easy to drag over one slot, and it still gets counted as a QuickCraft.
 		// We can't easily prevent QuickCraft from starting, but if we only make one slot insertable, then that's all the user can use for QuickCrafting.
@@ -35,21 +35,21 @@ public class FetchModusQueue extends FetchModus {
 			return false; // no override. It shouldn't take from blocked slots.
 
 		case PICKUP: // normal click
-			if(slotIndex == 0)
+			if(slot == 0)
 				return false; // allow all forms of normal click in slot 0. This will only extract items, not insert them (unless it's the only slot) because of canTakeItems/canInsertItems
 			
 			// Insert items at the end of the queue by clicking anywhere other than slot 0 (even on slots that already have items). Right-click to insert one item.
-			ItemStack cursor = inv.getCursorStack();
+			ItemStack cursor = plinv.getCursorStack();
 			if(!cursor.isEmpty()) {
 				if (clickData == 1 && cursor.getCount() >= 2) {
 					// insert one item
 					ItemStack one = cursor.copy();
 					one.setCount(1);
-					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), one);
+					insert(inv, one);
 					if(one.isEmpty())
 						cursor.decrement(1);
 				} else {
-					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), cursor);
+					insert(inv, cursor);
 				}
 			}
 			return true;
@@ -64,7 +64,7 @@ public class FetchModusQueue extends FetchModus {
 			// On the inventory screen, this moves items from the hotbar into the player's non-hotbar inventory - which works fine. For a queue it cycles the queue, for a stack it does nothing, for others (memory) it might be useful.
 			// It does tend to cause desyncs if you repeatedly click it. Not sure if that's a vanilla bug.
 			// You wouldn't see that bug in vanilla, since shift-clicking clears the slot so you can't shift-click it again.
-			if (slotIndex == 0)
+			if (slot == 0)
 				return false;
 			return true;
 			
@@ -75,15 +75,15 @@ public class FetchModusQueue extends FetchModus {
 	}
 	
 	@Override
-	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public void afterInventoryClick(Container this_, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
 		// Brute force! :)
-		initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
+		initialize(inv);
 	}
 	
 	@Override
-	public void afterPossibleInventoryChange(Container this_, PlayerInventory inv) {
+	public void afterPossibleInventoryChange(Container this_, InventoryWrapper inv) {
 		// Brute force! :)
-		initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
+		initialize(inv);
 	}
 	
 	@Override

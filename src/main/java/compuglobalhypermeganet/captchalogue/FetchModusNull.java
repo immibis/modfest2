@@ -32,7 +32,7 @@ public class FetchModusNull extends FetchModus {
 		if(inventory.player.world.isClient() || stack.isEmpty())
 			return false; // note that we often get here before the fetch modus item loads in on the client
 		else {
-			inventory.player.dropItem(stack, true, false); // can't hold any items!
+			inventory.player.dropItem(stack, false, true); // can't hold any items!
 			return true;
 		}
 	}

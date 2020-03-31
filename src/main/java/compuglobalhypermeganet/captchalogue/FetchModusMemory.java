@@ -42,7 +42,7 @@ public class FetchModusMemory extends FetchModus {
 	}
 	
 	@Override
-	public boolean overrideInventoryClick(Container cont, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
 		
 		if (isNormalSlot(slotIndex))
 			return false; // no override
@@ -50,32 +50,32 @@ public class FetchModusMemory extends FetchModus {
 		if(actionType != SlotActionType.PICKUP && actionType != SlotActionType.QUICK_MOVE) // normal click or shift-click on slot
 			return true;
 		
-		State state = (State)((IContainerMixin)cont).getFetchModusState(this, inv);
+		State state = (State)((IContainerMixin)cont).getFetchModusState(this, plinv);
 		
 		// Client generates random seed; sends it on every click (in ClickWindowC2SPacket); server copies it.
 		// If the client has changed the random seed then the server re-randomizes its inventory mapping based on the new seed.
-		if (inv.player.world.isClient()) {
+		if (inv.getPlayer().world.isClient()) {
 			FetchModus.currentPacketFetchModusState.set(state.randomSeed);
 		} else if (FetchModus.currentPacketFetchModusState.get() != state.randomSeed) {
-			state.setup(inv, FetchModus.currentPacketFetchModusState.get());
+			state.setup(plinv, FetchModus.currentPacketFetchModusState.get());
 		}
 		
-		if (!inv.getCursorStack().isEmpty()) {
+		if (!plinv.getCursorStack().isEmpty()) {
 			if (clickData == 1) {
 				// right-click deposits one item
-				ItemStack depositStack = inv.getCursorStack().copy();
+				ItemStack depositStack = plinv.getCursorStack().copy();
 				depositStack.setCount(1);
 				InventoryUtils.insertStack(inv, depositStack, ABNORMAL_RANGE_START, 36);
 				if (depositStack.getCount() == 0)
-					inv.getCursorStack().decrement(1);
+					plinv.getCursorStack().decrement(1);
 			} else {
-				InventoryUtils.insertStack(inv, inv.getCursorStack(), ABNORMAL_RANGE_START, 36);
+				InventoryUtils.insertStack(inv, plinv.getCursorStack(), ABNORMAL_RANGE_START, 36);
 			}
 			return true;
 		}
 		
 		// If a match was previously made, allow the item to be picked up! and reset the selection state immediately.
-		if (state.haveMatch(inv) && (slotIndex == state.revealedSlot1 || slotIndex == state.revealedSlot2)) {
+		if (state.haveMatch(plinv) && (slotIndex == state.revealedSlot1 || slotIndex == state.revealedSlot2)) {
 			// randomLayout[slotIndex] can't be -1 because then we wouldn't have a match.
 			
 			int underlyingSlotId = state.randomLayout[slotIndex];
@@ -83,7 +83,7 @@ public class FetchModusMemory extends FetchModus {
 			if (clickData == 1 || clickedStack.getCount() < 2) {
 				// right-click withdraws half stack (rounded up)
 				
-				inv.setCursorStack(clickedStack.split((clickedStack.getCount() + 1) / 2));
+				plinv.setCursorStack(clickedStack.split((clickedStack.getCount() + 1) / 2));
 				
 				// don't reset the game when only we withdraw half.
 				// But do hide the one that wasn't clicked on. This allows the player to withdraw more, but only from the same slot.
@@ -93,7 +93,7 @@ public class FetchModusMemory extends FetchModus {
 					state.revealedSlot1 = -1;
 				
 			} else {
-				inv.setCursorStack(clickedStack);
+				plinv.setCursorStack(clickedStack);
 				inv.setInvStack(underlyingSlotId, ItemStack.EMPTY);
 				
 				state.revealedSlot1 = -1;
@@ -104,7 +104,7 @@ public class FetchModusMemory extends FetchModus {
 			return true;
 		}
 		
-		if (state.timeoutAt != 0 || state.haveMatch(inv)) {
+		if (state.timeoutAt != 0 || state.haveMatch(plinv)) {
 			// timeout fires immediately
 			state.revealedSlot1 = -1;
 			state.revealedSlot2 = -1;
@@ -123,17 +123,17 @@ public class FetchModusMemory extends FetchModus {
 			// TODO: use the existing mechanism to prevent this possibility?
 			// TODO: don't time out on the server; instead, just tell it whether the client timed out or not.<
 
-			if (!state.haveMatch(inv)) // After the player matches two items, they have unlimited time to grab them.
+			if (!state.haveMatch(plinv)) // After the player matches two items, they have unlimited time to grab them.
 				state.timeoutAt = System.nanoTime() + 1000000000L;
 		}
 		
-		if (state.haveMatch(inv) && inv.player.world.isClient()) {
+		if (state.haveMatch(plinv) && plinv.player.world.isClient()) {
 			// Play the "experience level gained" jingle
-			inv.player.world.playSound(
-				inv.player,
-				inv.player.getX(), inv.player.getY(), inv.player.getZ(),
+			plinv.player.world.playSound(
+				plinv.player,
+				plinv.player.getX(), plinv.player.getY(), plinv.player.getZ(),
 				SoundEvents.ENTITY_PLAYER_LEVELUP,
-				inv.player.getSoundCategory(),
+				plinv.player.getSoundCategory(),
 				0.5F, 1.0F
 			);
 		}

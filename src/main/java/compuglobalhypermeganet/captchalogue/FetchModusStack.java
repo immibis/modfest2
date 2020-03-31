@@ -27,7 +27,7 @@ public class FetchModusStack extends FetchModus {
 	}
 	
 	@Override
-	public boolean overrideInventoryClick(Container cont, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
 		
 		// A QuickCraft of one slot must be treated as a pickup, because it's very easy to drag over one slot, and it still gets counted as a QuickCraft.
 		// We can't easily prevent QuickCraft from starting, but if we only make one slot insertable, then that's all the user can use for QuickCrafting.
@@ -45,17 +45,17 @@ public class FetchModusStack extends FetchModus {
 			// To insert items into a stack, you can't click on slot 0, because that will swap with the cursor! But you can click anywhere else.
 			
 			// Insert items at the end of the queue by clicking anywhere other than slot 0 (even on slots that already have items). Right-click to insert one item.
-			ItemStack cursor = inv.getCursorStack();
+			ItemStack cursor = plinv.getCursorStack();
 			if(!cursor.isEmpty()) {
 				if (clickData == 1 && cursor.getCount() >= 2) {
 					// insert one item. TODO: de-duplicate this code with FetchModusQueue
 					ItemStack one = cursor.copy();
 					one.setCount(1);
-					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), one);
+					insert(inv, one);
 					if(one.isEmpty())
 						cursor.decrement(1);
 				} else {
-					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), cursor);
+					insert(inv, cursor);
 				}
 			}
 			return true;
@@ -81,15 +81,15 @@ public class FetchModusStack extends FetchModus {
 	}
 	
 	@Override
-	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public void afterInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
 		// Brute force! :)
-		initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
+		initialize(inv);
 	}
 	
 	@Override
-	public void afterPossibleInventoryChange(Container this_, PlayerInventory inv) {
+	public void afterPossibleInventoryChange(Container this_, InventoryWrapper inv) {
 		// Brute force! :)
-		initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
+		initialize(inv);
 	}
 	
 	@Override

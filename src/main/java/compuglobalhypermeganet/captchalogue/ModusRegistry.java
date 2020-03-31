@@ -11,12 +11,7 @@ public class ModusRegistry {
 	}
 	
 	public static boolean isModus(ItemStack stack) {
-		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return true;
-		return false;
+		return getModus(stack) != null;
 	}
 	
 	public static FetchModus QUEUE = new FetchModusQueue();
@@ -25,12 +20,20 @@ public class ModusRegistry {
 	public static FetchModus NULL = new FetchModusNull();
 	public static FetchModus MEMORY = new FetchModusMemory();
 	public static FetchModus QUEUESTACK = new FetchModusQueuestack();
+	
+	public static FetchModus ARRAY_OF_QUEUE = new FetchModusArrayOfX(QUEUE);
+	public static FetchModus ARRAY_OF_STACK = new FetchModusArrayOfX(STACK);
+	public static FetchModus ARRAY_OF_QUEUESTACK = new FetchModusArrayOfX(QUEUESTACK);
+	
 	public static FetchModus getModus(ItemStack stack) {
 		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return QUEUE;
 		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return STACK;
 		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return ARRAY;
 		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return MEMORY;
 		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return QUEUESTACK;
+		if (stack.getItem() == CaptchalogueMod.itemQueueArrayFetchModus) return ARRAY_OF_QUEUE;
+		if (stack.getItem() == CaptchalogueMod.itemStackArrayFetchModus) return ARRAY_OF_STACK;
+		if (stack.getItem() == CaptchalogueMod.itemQueuestackArrayFetchModus) return ARRAY_OF_QUEUESTACK;
 		return NULL;
 	}
 	

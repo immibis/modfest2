@@ -59,7 +59,8 @@ public class SlotMixin implements ISlotMixin {
 		if(captchalogue_isPlayerSlot()) {
 			if (invSlot == CaptchalogueMod.MODUS_SLOT)
 				return;
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory), invSlot)) {
+			InventoryWrapper.PlayerInventorySkippingModusSlot inv = new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory);
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(inv, inv.fromUnderlyingSlotIndex(invSlot))) {
 				info.setReturnValue(false);
 			}
 		}
@@ -73,7 +74,8 @@ public class SlotMixin implements ISlotMixin {
 					info.setReturnValue(false);
 				return;
 			}
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory), invSlot)) {
+			InventoryWrapper.PlayerInventorySkippingModusSlot inv = new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory);
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(inv, inv.fromUnderlyingSlotIndex(invSlot))) {
 				info.setReturnValue(false);
 			}
 		}

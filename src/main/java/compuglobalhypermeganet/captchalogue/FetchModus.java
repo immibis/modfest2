@@ -94,7 +94,7 @@ public abstract class FetchModus {
 	public boolean overridesGuiSlotVisualConnectivity() {return false;}
 	public int getBackgroundGroupForSlot(int slot) {return -1;} // should be very fast
 
-	public boolean overrideInventoryClick(Container cont, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
+	public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slot, SlotActionType actionType, int clickData) {
 		return false; // return true to override
 	}
 
@@ -128,12 +128,12 @@ public abstract class FetchModus {
 	public final boolean blocksAccessToHotbarSlot(int slot) {return (slot == CaptchalogueMod.MODUS_SLOT ? MODUS_HOTBAR_SLOT_SHOULD_BE_BLOCKED : blocksAccessToHotbarSlot_(slot));}
 	protected boolean blocksAccessToHotbarSlot_(int slot) {return false;}
 
-	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {}
+	public void afterInventoryClick(Container this_, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {}
 
 	// Called after an unknown inventory change might have occurred (generally items were removed; other cases are not expected)
 	// E.g. this is called after someone double-clicks to pick up all items of a type and we're not sure whether it picked up any items out of their inventory.
 	// It's also called after an item is used because the item might have been used up.
-	public void afterPossibleInventoryChange(Container cont, PlayerInventory inv) {}
+	public void afterPossibleInventoryChange(Container cont, InventoryWrapper inv) {}
 
 
 

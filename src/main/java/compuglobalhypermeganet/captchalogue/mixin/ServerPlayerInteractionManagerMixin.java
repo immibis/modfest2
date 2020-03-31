@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
+import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
@@ -20,6 +21,6 @@ public class ServerPlayerInteractionManagerMixin {
 	// Unfortunately Fabric's UseItemCallback is not suitable, because it's called too early. We want to run after the interaction.
 	@Inject(at=@At("RETURN"), method="interactBlock(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/world/World;Lnet/minecraft/util/Hand;Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/hit/BlockHitResult;)Lnet/minecraft/util/ActionResult;")
 	public void afterInteractBlock(PlayerEntity player, World world, ItemStack stack, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> info) {
-		((IPlayerInventoryMixin)player.inventory).getFetchModus().afterPossibleInventoryChange(null, player.inventory);
+		((IPlayerInventoryMixin)player.inventory).getFetchModus().afterPossibleInventoryChange(null, new InventoryWrapper.PlayerInventorySkippingModusSlot(player.inventory));
 	}
 }

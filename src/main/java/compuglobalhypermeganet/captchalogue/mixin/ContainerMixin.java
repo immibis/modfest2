@@ -88,8 +88,10 @@ public abstract class ContainerMixin implements IContainerMixin {
 		if(slotIndex < 0 || slotIndex >= 36 || slotIndex == CaptchalogueMod.MODUS_SLOT)
 			return;
 		
+		InventoryWrapper.PlayerInventorySkippingModusSlot wrapper = new InventoryWrapper.PlayerInventorySkippingModusSlot(inv);
+		
 		FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();
-		if (modus.overrideInventoryClick(this_, inv, slotIndex, actionType, clickData)) {
+		if (modus.overrideInventoryClick(this_, inv, wrapper, wrapper.fromUnderlyingSlotIndex(slotIndex), actionType, clickData)) {
 			// Return value ItemStack is the one that gets included in the ClickWindowC2SPacket.
 			// Its only use is to detect desyncs. If they don't match on the client and server (damage value ignored)
 			// then the server re-sends the entire inventory contents to the client.
@@ -123,7 +125,7 @@ public abstract class ContainerMixin implements IContainerMixin {
 				return; // can't find player inventory, so can't execute hook
 
 			FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();
-			modus.afterPossibleInventoryChange((Container)(Object)this, inv);
+			modus.afterPossibleInventoryChange((Container)(Object)this, new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
 		}
 	}
 	
@@ -171,7 +173,8 @@ public abstract class ContainerMixin implements IContainerMixin {
 			}
 			*/
 		} else {
-			modus.afterInventoryClick(this_, inv, slotIndex, actionType, clickData);
+			InventoryWrapper.PlayerInventorySkippingModusSlot wrapper = new InventoryWrapper.PlayerInventorySkippingModusSlot(inv);
+			modus.afterInventoryClick(this_, inv, wrapper, wrapper.fromUnderlyingSlotIndex(slotIndex), actionType, clickData);
 		}
 	}
 	

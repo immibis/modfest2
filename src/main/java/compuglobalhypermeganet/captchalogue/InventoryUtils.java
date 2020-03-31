@@ -11,7 +11,7 @@ public class InventoryUtils {
 	// Inserted items are removed from the stack.
 	// Also the main hand and offhand slots don't get preferential treatment.
 	// Also we don't add crash report data.
-	public static void insertStack(PlayerInventory inv, ItemStack stack, int slotStart, int slotEnd) {
+	public static void insertStack(InventoryWrapper inv, ItemStack stack, int slotStart, int slotEnd) {
 		if (!stack.isEmpty()) {
 			if (stack.isDamaged()) {
 				for(int k = slotStart; k < slotEnd; k++) {
@@ -19,7 +19,7 @@ public class InventoryUtils {
 						inv.setInvStack(k, stack.copy());
 						inv.getInvStack(k).setCooldown(5);
 						stack.setCount(0);
-						inv.markDirty();
+						//inv.markDirty(); // TODO needed?
 						break;
 					}
 				}
@@ -36,7 +36,7 @@ public class InventoryUtils {
 						if (transfer > 0) {
 							stackInSlot.increment(transfer);
 							stack.decrement(transfer);
-							inv.markDirty(); // needed?
+							//inv.markDirty(); // TODO needed?
 						}
 					}
 				}
@@ -85,5 +85,20 @@ public class InventoryUtils {
 			}
 			inv.selectedSlot = lastSelectedSlot;
 		}
+	}
+
+	public static int playerInventoryLogicalToVisualIndex(int slot) {
+		// remap to top-to-bottom left-to-right order
+		if(slot < 9)
+			return slot + 27;
+		else
+			return slot - 9;
+	}
+
+	public static int playerInventoryVisualToLogicalIndex(int slot) {
+		if(slot < 27)
+			return slot + 9;
+		else
+			return slot - 27;
 	}
 }

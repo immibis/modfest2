@@ -3,6 +3,9 @@
 	"item.compuglobalhypermeganet.stack_fetch_modus": "Fetch Modus - Stack",
 	"item.compuglobalhypermeganet.queuestack_fetch_modus": "Fetch Modus - Queuestack",
 	"item.compuglobalhypermeganet.array_fetch_modus": "Fetch Modus - Array",
+	"item.compuglobalhypermeganet.queue_array_fetch_modus": "Fetch Modus - Queue Array",
+	"item.compuglobalhypermeganet.stack_array_fetch_modus": "Fetch Modus - Stack Array",
+	"item.compuglobalhypermeganet.queuestack_array_fetch_modus": "Fetch Modus - Queuestack Array",
 	"item.compuglobalhypermeganet.memory_fetch_modus": "Fetch Modus - Memory",
 	"itemGroup.compuglobalhypermeganet.captchalogue": "Captchalogue"
 }
