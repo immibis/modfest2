@@ -1,5 +1,6 @@
 package compuglobalhypermeganet.captchalogue;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import net.minecraft.container.Container;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -74,7 +75,7 @@ public class InventoryUtils {
 				lastSelectedSlot = 0; // default slot
 			
 			if (modus.blocksAccessToHotbarSlot(lastSelectedSlot)) {
-				lastSelectedSlot = FetchModus.MODUS_SLOT; // last resort slot (even though it's normally blocked)
+				lastSelectedSlot = CaptchalogueMod.MODUS_SLOT; // last resort slot (even though it's normally blocked)
 				for(int k = 0; k < 9; k++) {
 					if (!modus.blocksAccessToHotbarSlot(k)) {
 						lastSelectedSlot = k;

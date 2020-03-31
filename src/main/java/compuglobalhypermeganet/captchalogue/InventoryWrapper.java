@@ -1,5 +1,6 @@
 package compuglobalhypermeganet.captchalogue;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -33,14 +34,14 @@ public abstract class InventoryWrapper {
 			base.setInvStack(toUnderlyingSlotIndex(slot), stack);
 		}
 		public int fromUnderlyingSlotIndex(int slot) {
-			if(slot == FetchModus.MODUS_SLOT)
+			if(slot == CaptchalogueMod.MODUS_SLOT)
 				throw new IllegalArgumentException("slot is not mapped");
-			if(slot >= FetchModus.MODUS_SLOT)
+			if(slot >= CaptchalogueMod.MODUS_SLOT)
 				slot--;
 			return slot;
 		}
 		public int toUnderlyingSlotIndex(int slot) {
-			if(slot >= FetchModus.MODUS_SLOT)
+			if(slot >= CaptchalogueMod.MODUS_SLOT)
 				slot++;
 			return slot;
 		}

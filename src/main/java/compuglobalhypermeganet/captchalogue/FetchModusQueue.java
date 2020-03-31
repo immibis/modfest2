@@ -1,5 +1,6 @@
 package compuglobalhypermeganet.captchalogue;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import net.minecraft.container.Container;
 import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
@@ -129,7 +130,7 @@ public class FetchModusQueue extends FetchModus {
 	
 	@Override
 	public int getBackgroundGroupForSlot(int slot) {
-		if(slot == MODUS_SLOT)
+		if(slot == CaptchalogueMod.MODUS_SLOT)
 			return BG_GROUP_MODUS;
 		
 		// don't merge the extractable slot with anything else

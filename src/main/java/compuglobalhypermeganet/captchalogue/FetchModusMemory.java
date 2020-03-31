@@ -7,6 +7,7 @@ import java.util.Random;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -200,14 +201,14 @@ public class FetchModusMemory extends FetchModus {
 				// Leaves depth test enabled - this behaviour matches ContainerScreen.drawSlot
 			
 			} else {
-				Sprite sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEX).apply(FetchModus.MEMORY_MODUS_CROSS_IMAGE);
+				Sprite sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEX).apply(CaptchalogueMod.MEMORY_MODUS_CROSS_IMAGE);
 				MinecraftClient.getInstance().getTextureManager().bindTexture(sprite.getAtlas().getId());
 				DrawableHelper.blit(slot.xPosition, slot.yPosition, 0, 16, 16, sprite);
 			}
 			return true;
 		}
 		
-		Sprite sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEX).apply(FetchModus.MEMORY_MODUS_QUESTION_MARK_IMAGE);
+		Sprite sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEX).apply(CaptchalogueMod.MEMORY_MODUS_QUESTION_MARK_IMAGE);
 		MinecraftClient.getInstance().getTextureManager().bindTexture(sprite.getAtlas().getId());
 		DrawableHelper.blit(slot.xPosition, slot.yPosition, 0, 16, 16, sprite);
 		
@@ -217,7 +218,7 @@ public class FetchModusMemory extends FetchModus {
 	@Override
 	@Environment(EnvType.CLIENT)
 	public Slot overrideFocusedSlot(ContainerScreen<?> screen, PlayerInventory inv, int slot, Slot focusedSlot) {
-		if (isNormalSlot(slot) || slot == MODUS_SLOT)
+		if (isNormalSlot(slot) || slot == CaptchalogueMod.MODUS_SLOT)
 			return focusedSlot;
 		State state = (State)((IContainerMixin)screen.getContainer()).getFetchModusState(this, inv);
 		if (slot == state.revealedSlot1 || slot == state.revealedSlot2) {
@@ -266,14 +267,14 @@ public class FetchModusMemory extends FetchModus {
 
 			List<Integer> availableLayoutSlots = new ArrayList<>();
 			for(int k = 0; k < 36; k++)
-				if(k != MODUS_SLOT && !isNormalSlot(k))
+				if(k != CaptchalogueMod.MODUS_SLOT && !isNormalSlot(k))
 					availableLayoutSlots.add(k);
 			// TODO: is Collections.shuffle(Random) always the same algorithm in different Java implementations?
 			Collections.shuffle(availableLayoutSlots, random);
 			
 			List<Integer> usedSlots = new ArrayList<>();
 			for(int k = 0; k < 36; k++)
-				if (!inv.main.get(k).isEmpty() && k != MODUS_SLOT && !isNormalSlot(k))
+				if (!inv.main.get(k).isEmpty() && k != CaptchalogueMod.MODUS_SLOT && !isNormalSlot(k))
 					usedSlots.add(k);
 			// If the player has used too few inventory slots, the memory game matrix will have empty squares.
 			// With 12 usedSlots, each slot (including the empty ones we're about to add) occurs roughly 3 times on the game board.

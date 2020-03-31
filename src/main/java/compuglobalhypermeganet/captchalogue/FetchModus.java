@@ -9,7 +9,6 @@ import net.minecraft.container.Slot;
 import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 
 public abstract class FetchModus {
 	
@@ -61,11 +60,6 @@ public abstract class FetchModus {
 	 * Violently eject items when modus is removed?
 	 */
 	
-	public static final int MODUS_SLOT = 8;
-	public static final Identifier MODUS_SLOT_BG_IMAGE = new Identifier("compuglobalhypermeganet", "placeholder_fetch_modus");
-	public static final Identifier MEMORY_MODUS_QUESTION_MARK_IMAGE = new Identifier("compuglobalhypermeganet", "memory_game_unrevealed_slot");
-	public static final Identifier MEMORY_MODUS_CROSS_IMAGE = new Identifier("compuglobalhypermeganet", "memory_game_empty_slot");
-	
 	public static ThreadLocal<Boolean> isProcessingPacket = ThreadLocal.withInitial(() -> Boolean.FALSE);
 	
 	static void compactItemsToLowerIndices(InventoryWrapper inv, int start) {
@@ -86,35 +80,7 @@ public abstract class FetchModus {
 	}
 	
 	public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {return false;} // return true to override
-	
-	public static FetchModus getModus(PlayerInventory inventory) {
-		ItemStack modus = inventory.getInvStack(MODUS_SLOT);
-		return getFlyweightModus(modus);
-	}
-	
-	public static boolean isModus(ItemStack stack) {
-		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return true;
-		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return true;
-		return false;
-	}
-	
-	public static FetchModus QUEUE = new FetchModusQueue();
-	public static FetchModus STACK = new FetchModusStack();
-	public static FetchModus ARRAY = new FetchModusArray();
-	public static FetchModus NULL = new FetchModusNull();
-	public static FetchModus MEMORY = new FetchModusMemory();
-	public static FetchModus QUEUESTACK = new FetchModusQueuestack();
-	public static FetchModus getFlyweightModus(ItemStack stack) {
-		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return QUEUE;
-		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return STACK;
-		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return ARRAY;
-		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return MEMORY;
-		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return QUEUESTACK;
-		return NULL;
-	}
+
 	public abstract boolean hasCustomInsert();
 	public abstract void insert(InventoryWrapper inv, ItemStack stack);
 	public abstract boolean forceRightClickOneItem();
@@ -159,7 +125,7 @@ public abstract class FetchModus {
 
 	// This only affects whether the player can select a particular slot in their hotbar. It doesn't stop them using that slot on their inventory screen.
 	public static final boolean MODUS_HOTBAR_SLOT_SHOULD_BE_BLOCKED = true; // If true, this would prevent players from throwing their modus for example, without opening their inventory. Or right-clicking things with their modus.
-	public final boolean blocksAccessToHotbarSlot(int slot) {return (slot == MODUS_SLOT ? MODUS_HOTBAR_SLOT_SHOULD_BE_BLOCKED : blocksAccessToHotbarSlot_(slot));}
+	public final boolean blocksAccessToHotbarSlot(int slot) {return (slot == CaptchalogueMod.MODUS_SLOT ? MODUS_HOTBAR_SLOT_SHOULD_BE_BLOCKED : blocksAccessToHotbarSlot_(slot));}
 	protected boolean blocksAccessToHotbarSlot_(int slot) {return false;}
 
 	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {}

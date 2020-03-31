@@ -8,10 +8,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.InventoryUtils;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
+import compuglobalhypermeganet.captchalogue.ModusRegistry;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -25,14 +27,14 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	
 	@Override
 	public FetchModus getFetchModus() {
-		return FetchModus.getModus((PlayerInventory)(Object)this);
+		return ModusRegistry.getModus((PlayerInventory)(Object)this);
 	}
 	
 	@Unique
 	private boolean captchalogue_acceptAsModus(ItemStack stack) {
 		PlayerInventory this_ = (PlayerInventory)(Object)this;
-		if (this_.getInvStack(FetchModus.MODUS_SLOT).isEmpty() && FetchModus.isModus(stack)) {
-			this_.setInvStack(FetchModus.MODUS_SLOT, stack.copy());
+		if (this_.getInvStack(CaptchalogueMod.MODUS_SLOT).isEmpty() && ModusRegistry.isModus(stack)) {
+			this_.setInvStack(CaptchalogueMod.MODUS_SLOT, stack.copy());
 			stack.setCount(0);
 			return true;
 		}

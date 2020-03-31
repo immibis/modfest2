@@ -11,6 +11,12 @@ import net.minecraft.util.registry.Registry;
 
 public class CaptchalogueMod implements ModInitializer {
 	
+	public static final int MODUS_SLOT = 8;
+	public static final Identifier MODUS_SLOT_BG_IMAGE = new Identifier("compuglobalhypermeganet", "placeholder_fetch_modus");
+	public static final Identifier MEMORY_MODUS_QUESTION_MARK_IMAGE = new Identifier("compuglobalhypermeganet", "memory_game_unrevealed_slot");
+	public static final Identifier MEMORY_MODUS_CROSS_IMAGE = new Identifier("compuglobalhypermeganet", "memory_game_empty_slot");
+	
+	
 	public static final ItemGroup itemGroupCaptchalogue = FabricItemGroupBuilder.build(
 			new Identifier("compuglobalhypermeganet", "captchalogue"),
 			() -> new ItemStack(Blocks.COBBLESTONE));

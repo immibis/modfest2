@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
@@ -84,7 +85,7 @@ public abstract class ContainerMixin implements IContainerMixin {
 			return;
 		PlayerInventory inv = (PlayerInventory)slot.inventory;
 		int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
-		if(slotIndex < 0 || slotIndex >= 36 || slotIndex == FetchModus.MODUS_SLOT)
+		if(slotIndex < 0 || slotIndex >= 36 || slotIndex == CaptchalogueMod.MODUS_SLOT)
 			return;
 		
 		FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();
@@ -162,7 +163,7 @@ public abstract class ContainerMixin implements IContainerMixin {
 		int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
 		FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();
 
-		if(slotIndex < 0 || slotIndex >= 36 || slotIndex == FetchModus.MODUS_SLOT) {
+		if(slotIndex < 0 || slotIndex >= 36 || slotIndex == CaptchalogueMod.MODUS_SLOT) {
 			/*
 			// PICKUP_ALL in *other* slots can affect our slots. But we have a special hook for that.
 			if (actionType == SlotActionType.PICKUP_ALL) {

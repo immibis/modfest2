@@ -5,6 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -21,7 +22,7 @@ public class InGameHudMixin {
 			// We can't do this for empty stacks, since they're all the same.
 			for (int k = 0; k < 9; k++) {
 				if (stack == player.inventory.getInvStack(k)) {
-					if (k != FetchModus.MODUS_SLOT && modus.hidesHotbarSlot(k))
+					if (k != CaptchalogueMod.MODUS_SLOT && modus.hidesHotbarSlot(k))
 						info.cancel();
 					return;
 				}

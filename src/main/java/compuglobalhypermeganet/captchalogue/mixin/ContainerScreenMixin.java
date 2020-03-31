@@ -14,10 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.ISlotMixin;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
+import compuglobalhypermeganet.captchalogue.ModusRegistry;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.ContainerScreen;
 import net.minecraft.client.render.BufferBuilder;
@@ -160,7 +162,7 @@ public abstract class ContainerScreenMixin extends Screen {
 		} else {
 			inventoryLayoutCheckFrames--;
 		}
-		modus = FetchModus.getModus(inv);
+		modus = ModusRegistry.getModus(inv);
 		
 		if (unsupportedLayout)
 			return;
@@ -384,7 +386,7 @@ public abstract class ContainerScreenMixin extends Screen {
 		if(slot.inventory instanceof PlayerInventory) {
 			PlayerInventory inv = (PlayerInventory)slot.inventory;
 			int slotNum = ((ISlotMixin)slot).captchalogue_getSlotNum();
-			if(slotNum < 0 || slotNum >= 36 || slotNum == FetchModus.MODUS_SLOT)
+			if(slotNum < 0 || slotNum >= 36 || slotNum == CaptchalogueMod.MODUS_SLOT)
 				return;
 			
 			if (modus.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
@@ -422,7 +424,7 @@ public abstract class ContainerScreenMixin extends Screen {
 			if (slot.inventory instanceof PlayerInventory) {
 				PlayerInventory inv = (PlayerInventory)slot.inventory;
 				int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
-				if(slotIndex == FetchModus.MODUS_SLOT || slotIndex < 0 || slotIndex >= 36)
+				if(slotIndex == CaptchalogueMod.MODUS_SLOT || slotIndex < 0 || slotIndex >= 36)
 					return true; // no override
 				
 				FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();

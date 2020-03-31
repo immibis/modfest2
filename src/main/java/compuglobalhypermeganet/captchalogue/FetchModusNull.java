@@ -1,5 +1,6 @@
 package compuglobalhypermeganet.captchalogue;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -55,7 +56,7 @@ public class FetchModusNull extends FetchModus {
 	}
 	@Override
 	public int getBackgroundGroupForSlot(int slot) {
-		if(slot == MODUS_SLOT)
+		if(slot == CaptchalogueMod.MODUS_SLOT)
 			return BG_GROUP_MODUS;
 		return BG_GROUP_INVISIBLE;
 	}

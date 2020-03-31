@@ -1,24 +1,26 @@
 package compuglobalhypermeganet.captchalogue;
 
+import compuglobalhypermeganet.CaptchalogueMod;
+
 public class QueueOrStackInventoryLayout {
 	public byte[] visualToLogicalSlotMapping = new byte[36];
 	public byte[] logicalToVisualSlotMapping = new byte[36];
 	public byte[] visualSlotBorderStyle = new byte[36];
 	
 	public void map(int visualSlot, int logicalSlot, int borderStyle) {
-		if(visualSlot == FetchModus.MODUS_SLOT || logicalSlot == FetchModus.MODUS_SLOT)
+		if(visualSlot == CaptchalogueMod.MODUS_SLOT || logicalSlot == CaptchalogueMod.MODUS_SLOT)
 			throw new IllegalArgumentException();
-		if(logicalSlot >= FetchModus.MODUS_SLOT)
+		if(logicalSlot >= CaptchalogueMod.MODUS_SLOT)
 			logicalSlot++; // don't include modus slot in mapping definition (but do skip over it in the mapping)
 		visualToLogicalSlotMapping[visualSlot] = (byte)logicalSlot;
 		logicalToVisualSlotMapping[logicalSlot] = (byte)visualSlot;
 		visualSlotBorderStyle[visualSlot] = (byte)borderStyle;
 	}
 	static int nextLogicalSlot(int slot) {
-		return slot == FetchModus.MODUS_SLOT - 1 ? slot+2 : slot+1;
+		return slot == CaptchalogueMod.MODUS_SLOT - 1 ? slot+2 : slot+1;
 	}
 	static int prevLogicalSlot(int slot) {
-		return slot == FetchModus.MODUS_SLOT + 1 ? slot-2 : slot-1;
+		return slot == CaptchalogueMod.MODUS_SLOT + 1 ? slot-2 : slot-1;
 	}
 	
 	public static final int T_BORDER = 1;
@@ -28,7 +30,7 @@ public class QueueOrStackInventoryLayout {
 	public static final int RENDER_SELF = 16;
 	
 	public static final QueueOrStackInventoryLayout QUEUE_OR_STACK_LAYOUT = new QueueOrStackInventoryLayout() {{
-		if(FetchModus.MODUS_SLOT == 8) {
+		if(CaptchalogueMod.MODUS_SLOT == 8) {
 			// 8  9  10 11 12 13 14 15 16
 			// 25 24 23 22 21 20 19 18 17
 			// 26 27 28 29 30 31 32 33 34

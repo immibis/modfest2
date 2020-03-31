@@ -1,6 +1,5 @@
 package compuglobalhypermeganet;
 
-import compuglobalhypermeganet.captchalogue.FetchModus;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,9 +14,9 @@ public class CaptchalogueModClient implements ClientModInitializer {
 		ClientSpriteRegistryCallback.event(SpriteAtlasTexture.BLOCK_ATLAS_TEX).register(new ClientSpriteRegistryCallback() {
 			@Override
 			public void registerSprites(SpriteAtlasTexture atlasTexture, Registry registry) {
-				registry.register(FetchModus.MODUS_SLOT_BG_IMAGE);
-				registry.register(FetchModus.MEMORY_MODUS_QUESTION_MARK_IMAGE);
-				registry.register(FetchModus.MEMORY_MODUS_CROSS_IMAGE);
+				registry.register(CaptchalogueMod.MODUS_SLOT_BG_IMAGE);
+				registry.register(CaptchalogueMod.MEMORY_MODUS_QUESTION_MARK_IMAGE);
+				registry.register(CaptchalogueMod.MEMORY_MODUS_CROSS_IMAGE);
 			}
 		});
 	}
