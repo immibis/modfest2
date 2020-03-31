@@ -17,6 +17,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.ISlotMixin;
+import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.ContainerScreen;
 import net.minecraft.client.render.BufferBuilder;
@@ -389,7 +390,7 @@ public abstract class ContainerScreenMixin extends Screen {
 			if (modus.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
 				info.cancel();
 			}
-			
+			/*
 			if(!modus.canTakeFromSlot(inv, slotNum)) {
 				// draw some type of overlay
 				int x = slot.xPosition;
@@ -399,7 +400,7 @@ public abstract class ContainerScreenMixin extends Screen {
 				//DrawableHelper.fill(x, y, x+16, y+16, 0x80FF0000);
 				
 				//info.cancel();
-			}
+			}*/
 			
 			// if(unsupportedLayout) to check whether we are doing the full override
 			
@@ -428,7 +429,8 @@ public abstract class ContainerScreenMixin extends Screen {
 				
 				boolean holdingItem = !inv.getCursorStack().isEmpty();
 				
-				if ((!holdingItem && !modus.canTakeFromSlot(inv, slotIndex)) || (holdingItem && !modus.canInsertToSlot(inv, slotIndex)) ) {
+				InventoryWrapper.PlayerInventorySkippingModusSlot wrapper = new InventoryWrapper.PlayerInventorySkippingModusSlot(inv);
+				if ((!holdingItem && !modus.canTakeFromSlot(wrapper, wrapper.fromUnderlyingSlotIndex(slotIndex))) || (holdingItem && !modus.canInsertToSlot(wrapper, wrapper.fromUnderlyingSlotIndex(slotIndex))) ) {
 					// Set focusedSlot (normally done if this function returns true), but return false to skip the highlight rendering
 					
 					// ... unless the modus blocks it (like Memory modus for unrevealed slots!)

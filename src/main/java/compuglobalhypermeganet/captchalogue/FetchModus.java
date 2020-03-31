@@ -35,6 +35,7 @@ public abstract class FetchModus {
 	 *  Hashtable
 	 *  Hashtable with arrays/stacks/queues/queuestack
 	 *  Tree
+	 *  Queue/stack/queuestack of arrays?
 	 *  
 	 *  ? Array/stack/queue of trees
 	 *  ? Boggle
@@ -67,31 +68,24 @@ public abstract class FetchModus {
 	
 	public static ThreadLocal<Boolean> isProcessingPacket = ThreadLocal.withInitial(() -> Boolean.FALSE);
 	
-	static void compactItemsToLowerIndices(PlayerInventory inventory, int start) {
+	static void compactItemsToLowerIndices(InventoryWrapper inv, int start) {
 		int to = start;
 		int from = start;
-		while(from < inventory.main.size()) {
-			if(from != MODUS_SLOT && !inventory.main.get(from).isEmpty()) {
+		while(from < inv.getNumSlots()) {
+			if(!inv.getInvStack(from).isEmpty()) {
 				if (from != to)
-					inventory.main.set(to, inventory.main.get(from));
+					inv.setInvStack(to, inv.getInvStack(from));
 				to++;
-				if(to == MODUS_SLOT)
-					to++;
 			}
 			from++;
 		}
-		while(to < inventory.main.size()) {
-			inventory.main.set(to, ItemStack.EMPTY);
+		while(to < inv.getNumSlots()) {
+			inv.setInvStack(to, ItemStack.EMPTY);
 			to++;
-			if(to == MODUS_SLOT)
-				to++;
 		}
 	}
 	
-	public abstract boolean canTakeFromSlot(PlayerInventory inv, int slot);
-	public abstract boolean canInsertToSlot(PlayerInventory inv, int slot);
 	public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {return false;} // return true to override
-	public abstract void initialize(PlayerInventory inventory);
 	
 	public static FetchModus getModus(PlayerInventory inventory) {
 		ItemStack modus = inventory.getInvStack(MODUS_SLOT);
@@ -122,7 +116,7 @@ public abstract class FetchModus {
 		return NULL;
 	}
 	public abstract boolean hasCustomInsert();
-	public abstract void insert(PlayerInventory inv, ItemStack stack);
+	public abstract void insert(InventoryWrapper inv, ItemStack stack);
 	public abstract boolean forceRightClickOneItem();
 	
 	// For Stack and Queue moduses, we visually connect most of the slots in the GUI (except the one the player can pull items out of, and the modus slot).
@@ -175,5 +169,11 @@ public abstract class FetchModus {
 	// It's also called after an item is used because the item might have been used up.
 	public void afterPossibleInventoryChange(Container cont, PlayerInventory inv) {}
 
-	public void deinitialize(PlayerInventory inv) {}
+
+
+	public abstract boolean canTakeFromSlot(InventoryWrapper inv, int slot);
+	public abstract boolean canInsertToSlot(InventoryWrapper inv, int slot);
+
+	public void initialize(InventoryWrapper inv) {}
+	public void deinitialize(InventoryWrapper inv) {}
 }

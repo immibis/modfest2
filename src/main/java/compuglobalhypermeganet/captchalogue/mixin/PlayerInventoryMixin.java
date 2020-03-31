@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.InventoryUtils;
+import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -53,7 +54,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			// modus.insert updates the stack's count.
 			// Slot number is ignored!
 			int previousCount = stack.getCount();
-			modus.insert((PlayerInventory)(Object)this, stack);
+			modus.insert(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), stack);
 			info.setReturnValue(stack.getCount() < previousCount);
 		}
 	}
@@ -72,7 +73,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			
 			FetchModus modus = getFetchModus();
 			if (modus.hasCustomInsert()) {
-				modus.insert((PlayerInventory)(Object)this, stack);
+				modus.insert(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), stack);
 				if (stack.getCount() == 0) {
 					info.cancel();
 				}
@@ -84,14 +85,14 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	@Inject(at = @At("HEAD"), method="isUsingEffectiveTool(Lnet/minecraft/block/BlockState;)Z", cancellable=true)
 	public void enforceModus_isUsingEffectiveTool(CallbackInfoReturnable<Boolean> info) {
 		// If the modus won't allow it, pretend we are not using the item in this slot. 
-		if (!getFetchModus().canTakeFromSlot((PlayerInventory)(Object)this, selectedSlot))
+		if (!getFetchModus().canTakeFromSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), selectedSlot))
 			info.setReturnValue(Boolean.FALSE);
 	}
 	
 	@Inject(at = @At("HEAD"), method="getBlockBreakingSpeed(Lnet/minecraft/block/BlockState;)F", cancellable=true)
 	public void enforceModus_getBlockBreakingSpeed(BlockState block, CallbackInfoReturnable<Float> info) {
 		// If the modus won't allow it, pretend we are not using the item in this slot. 
-		if (!getFetchModus().canTakeFromSlot((PlayerInventory)(Object)this, selectedSlot))
+		if (!getFetchModus().canTakeFromSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), selectedSlot))
 			info.setReturnValue(Float.valueOf(ItemStack.EMPTY.getMiningSpeed(block)));
 	}
 	

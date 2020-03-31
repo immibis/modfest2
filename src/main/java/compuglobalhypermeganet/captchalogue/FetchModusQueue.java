@@ -7,17 +7,17 @@ import net.minecraft.item.ItemStack;
 
 public class FetchModusQueue extends FetchModus {
 	@Override
-	public void initialize(PlayerInventory inventory) {
+	public void initialize(InventoryWrapper inventory) {
 		compactItemsToLowerIndices(inventory, 0);
 	}
 	
 	@Override
-	public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
+	public boolean canTakeFromSlot(InventoryWrapper inv, int slot) {
 		return slot == 0;
 	}
 	@Override
-	public boolean canInsertToSlot(PlayerInventory inv, int slot) {
-		return inv.main.get(slot).isEmpty() && (slot == 0 || !inv.main.get(slot == MODUS_SLOT+1 ? slot-2 : slot-1).isEmpty());
+	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
+		return inv.getInvStack(slot).isEmpty() && (slot == 0 || !inv.getInvStack(slot-1).isEmpty());
 	}
 	
 	@Override
@@ -44,11 +44,11 @@ public class FetchModusQueue extends FetchModus {
 					// insert one item
 					ItemStack one = cursor.copy();
 					one.setCount(1);
-					insert(inv, one);
+					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), one);
 					if(one.isEmpty())
 						cursor.decrement(1);
 				} else {
-					insert(inv, cursor);
+					insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), cursor);
 				}
 			}
 			return true;
@@ -76,13 +76,13 @@ public class FetchModusQueue extends FetchModus {
 	@Override
 	public void afterInventoryClick(Container this_, PlayerInventory inv, int slotIndex, SlotActionType actionType, int clickData) {
 		// Brute force! :)
-		initialize(inv);
+		initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
 	}
 	
 	@Override
 	public void afterPossibleInventoryChange(Container this_, PlayerInventory inv) {
 		// Brute force! :)
-		initialize(inv);
+		initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
 	}
 	
 	@Override
@@ -90,18 +90,18 @@ public class FetchModusQueue extends FetchModus {
 		return true;
 	}
 	
-	private int getLastFilledSlot(PlayerInventory inv) {
+	private int getLastFilledSlot(InventoryWrapper inv) {
 		int lastFilled = 0; // return 0 if inventory is totally empty
-		for(int k = 0; k < inv.main.size(); k++) {
-			if (k != MODUS_SLOT && !inv.main.get(k).isEmpty())
+		for(int k = 0; k < inv.getNumSlots(); k++) {
+			if (!inv.getInvStack(k).isEmpty())
 				lastFilled = k;
 		}
 		return lastFilled;
 	}
 	
 	@Override
-	public void insert(PlayerInventory inv, ItemStack stack) {
-		ItemStack curStackLast = inv.main.get(getLastFilledSlot(inv));
+	public void insert(InventoryWrapper inv, ItemStack stack) {
+		ItemStack curStackLast = inv.getInvStack(getLastFilledSlot(inv));
 		if(!curStackLast.isEmpty() && Container.canStacksCombine(curStackLast, stack)) {
 			int ntransfer = Math.min(stack.getCount(), curStackLast.getMaxCount() - curStackLast.getCount());
 			curStackLast.increment(ntransfer);
@@ -109,8 +109,8 @@ public class FetchModusQueue extends FetchModus {
 			if(stack.getCount() == 0)
 				return;
 		}
-		for(int k = 0; k < inv.main.size(); k++) {
-			if (inv.main.get(k).isEmpty()) {
+		for(int k = 0; k < inv.getNumSlots(); k++) {
+			if (inv.getInvStack(k).isEmpty()) {
 				inv.setInvStack(k, stack.copy());
 				stack.setCount(0);
 				return;

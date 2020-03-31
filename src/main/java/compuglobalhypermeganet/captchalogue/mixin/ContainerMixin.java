@@ -12,6 +12,7 @@ import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.ISlotMixin;
+import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
 import net.minecraft.container.SlotActionType;
@@ -47,10 +48,11 @@ public abstract class ContainerMixin implements IContainerMixin {
 					return; // If the player's fetch modus doesn't have a custom insert function, then don't override anything
 				PlayerInventory plinv = (PlayerInventory)slot.inventory;
 				int originalCount = stack.getCount();
-				modus.insert(plinv, stack);
+				modus.insert(new InventoryWrapper.PlayerInventorySkippingModusSlot(plinv), stack);
 				
 				// Try all remaining slots other than the player's inventory.
 				// This assumes only one player inventory is involved. Might not be the case in rare cases, e.g. Chicken Chests.
+				// TODO: this code can probably be improved. We should pass consecutive slot ranges to recursive insertItem!
 				for (; k != endIndex && !stack.isEmpty(); k += slotIncrement) {
 					slot = this_.slots.get(k);
 					if (slot.inventory == plinv)

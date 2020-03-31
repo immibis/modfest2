@@ -14,6 +14,7 @@ import com.mojang.datafixers.util.Pair;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.ISlotMixin;
+import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.texture.SpriteAtlasTexture;
@@ -56,7 +57,7 @@ public class SlotMixin implements ISlotMixin {
 		if(captchalogue_isPlayerSlot()) {
 			if (invSlot == FetchModus.MODUS_SLOT)
 				return;
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot((PlayerInventory)inventory, invSlot)) {
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory), invSlot)) {
 				info.setReturnValue(false);
 			}
 		}
@@ -70,7 +71,7 @@ public class SlotMixin implements ISlotMixin {
 					info.setReturnValue(false);
 				return;
 			}
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot((PlayerInventory)inventory, invSlot)) {
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory), invSlot)) {
 				info.setReturnValue(false);
 			}
 		}
@@ -96,8 +97,8 @@ public class SlotMixin implements ISlotMixin {
 				//if (!stack.isEmpty() && FetchModus.isModus(stack)) {
 					//m.setFetchModus(FetchModus.createModus(stack));
 				((PlayerInventory)inventory).main.set(FetchModus.MODUS_SLOT, stack);
-				oldModus.deinitialize((PlayerInventory)inventory);
-				m.getFetchModus().initialize((PlayerInventory)inventory);
+				oldModus.deinitialize(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory));
+				m.getFetchModus().initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory));
 				info.cancel();
 				//}
 				return;

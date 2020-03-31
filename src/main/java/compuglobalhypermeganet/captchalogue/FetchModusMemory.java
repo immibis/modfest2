@@ -26,12 +26,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
 
 public class FetchModusMemory extends FetchModus {
-	@Override
-	public void initialize(PlayerInventory inventory) {
-	}
-	
 	@Override public boolean hasCustomInsert() {return false;}
-	@Override public void insert(PlayerInventory inv, ItemStack stack) {throw new AssertionError("unreachable");}
+	@Override public void insert(InventoryWrapper inv, ItemStack stack) {throw new AssertionError("unreachable");}
 	
 	// Give the player two normal slots to hold items they can use.
 	public static final int ABNORMAL_RANGE_START = 2;
@@ -236,11 +232,11 @@ public class FetchModusMemory extends FetchModus {
 	}
 	
 	@Override
-	public boolean canInsertToSlot(PlayerInventory inv, int slot) {
+	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
 		return isNormalSlot(slot);
 	}
 	@Override
-	public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
+	public boolean canTakeFromSlot(InventoryWrapper inv, int slot) {
 		return isNormalSlot(slot);
 	}
 	

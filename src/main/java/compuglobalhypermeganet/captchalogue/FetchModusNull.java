@@ -1,26 +1,28 @@
 package compuglobalhypermeganet.captchalogue;
 
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
 public class FetchModusNull extends FetchModus {
 	@Override
-	public boolean canInsertToSlot(PlayerInventory inv, int slot) {
+	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
 		return false;
 	}
 	@Override
-	public boolean canTakeFromSlot(PlayerInventory inv, int slot) {
+	public boolean canTakeFromSlot(InventoryWrapper inv, int slot) {
 		return false;
 	}
 	@Override
-	public void initialize(PlayerInventory inventory) {
-		for(int k = 0; k < inventory.main.size(); k++) {
-			if(k != MODUS_SLOT) {
-				if (!inventory.player.world.isClient()) {
-					// TODO: was true, false. Second parameter makes items drop in a much bigger range; third parameter sets the thrower?
-					inventory.player.dropItem(inventory.main.get(k), false, true);
-				}
-				inventory.main.set(k, ItemStack.EMPTY);
+	public void initialize(InventoryWrapper inventory) {
+		PlayerEntity player = inventory.getPlayer();
+		for(int k = 0; k < inventory.getNumSlots(); k++) {
+			ItemStack stack = inventory.getInvStack(k);
+			inventory.setInvStack(k, ItemStack.EMPTY);
+			
+			if (!player.world.isClient()) {
+				// Second parameter makes items drop in a much bigger range; third parameter sets the thrower?
+				player.dropItem(stack, false, true);
 			}
 		}
 	}
@@ -39,7 +41,7 @@ public class FetchModusNull extends FetchModus {
 		return true;
 	}
 	@Override
-	public void insert(PlayerInventory inv, ItemStack stack) {
+	public void insert(InventoryWrapper inv, ItemStack stack) {
 		// no-op
 	}
 	@Override
