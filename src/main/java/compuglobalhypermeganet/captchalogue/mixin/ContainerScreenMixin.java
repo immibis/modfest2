@@ -6,6 +6,7 @@ import java.util.Arrays;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -50,7 +51,8 @@ public abstract class ContainerScreenMixin extends Screen {
 	
 	private boolean printedUnsupportedMessage;
 	
-	private void refreshInventoryLayout() {
+	@Unique
+	private void captchalogue_refreshInventoryLayout() {
 		ContainerScreen this_ = ((ContainerScreen)(Object)this);
 		if(inventorySlots == null)
 			inventorySlots = new Slot[36];
@@ -148,25 +150,11 @@ public abstract class ContainerScreenMixin extends Screen {
 	
 	private int inventoryLayoutCheckFrames = 0;
 	
-	private void drawSolidQuad(float x, float y, float w, float h, float r, float g, float b) {
-		float z = 400;
-		RenderSystem.disableTexture();
-		BufferBuilder bb = Tessellator.getInstance().getBuffer();
-		bb.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-		bb.vertex(this.x+x, this.y+y, z).color(r, g, b, 1.0f);
-		bb.vertex(this.x+x, this.y+y+w, z).color(r, g, b, 1.0f);
-		bb.vertex(this.x+x+h, this.y+y+w, z).color(r, g, b, 1.0f);
-		bb.vertex(this.x+x+h, this.y+y, z).color(r, g, b, 1.0f);
-		bb.end();
-		BufferRenderer.draw(bb);
-		RenderSystem.enableTexture();
-	}
-	
 	@Inject(at=@At("HEAD"), method="render(IIF)V")
 	public void onBeforeRender(CallbackInfo info) {
 		//System.out.println("onBeforeRender");
 		if(inventoryLayoutCheckFrames <= 1) {
-			refreshInventoryLayout();
+			captchalogue_refreshInventoryLayout();
 			inventoryLayoutCheckFrames = 120;
 		} else {
 			inventoryLayoutCheckFrames--;
@@ -180,7 +168,8 @@ public abstract class ContainerScreenMixin extends Screen {
 		
 	}
 	
-	private int getSlotAtVisualPosition(int x, int y) {
+	@Unique
+	private int captchalogue_getSlotAtVisualPosition(int x, int y) {
 		if (y < 0 || y > 3 || x < 0 || x > 8)
 			return -1;
 		// make the hotbar y=3 instead of the slot order y=0
@@ -191,7 +180,8 @@ public abstract class ContainerScreenMixin extends Screen {
 		return x + y*9; // not null, because unsupportedLayout is false
 	}
 	
-	private void appendGreyQuad(BufferBuilder bb, Matrix4f matrix, float x1, float y1, float x2, float y2, float colour) {
+	@Unique
+	private void captchalogue_appendGreyQuad(BufferBuilder bb, Matrix4f matrix, float x1, float y1, float x2, float y2, float colour) {
 		bb.vertex(matrix, x1, y1, 0).color(colour, colour, colour, 1.0f).next();
 		bb.vertex(matrix, x1, y2, 0).color(colour, colour, colour, 1.0f).next();
 		bb.vertex(matrix, x2, y2, 0).color(colour, colour, colour, 1.0f).next();
@@ -235,7 +225,7 @@ public abstract class ContainerScreenMixin extends Screen {
 			bb.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
 			
 			// Hide everything that's already there. We draw our own slots. (inventoryRect includes the 1-pixel edges)
-			appendGreyQuad(bb, matrix, inventoryRect.x, inventoryRect.y, inventoryRect.x+inventoryRect.width, inventoryRect.y+inventoryRect.height, COL_INVISIBLE);
+			captchalogue_appendGreyQuad(bb, matrix, inventoryRect.x, inventoryRect.y, inventoryRect.x+inventoryRect.width, inventoryRect.y+inventoryRect.height, COL_INVISIBLE);
 			
 			final int DIR_UP = 1;
 			final int DIR_DOWN = 2;
@@ -247,14 +237,14 @@ public abstract class ContainerScreenMixin extends Screen {
 			// loop over visual positions
 			for(int y = 0, n = 0; y < 4; y++)
 				for(int x = 0; x < 9; x++, n++) {
-					int myGroup = modus.getBackgroundGroupForSlot(getSlotAtVisualPosition(x, y));
+					int myGroup = modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x, y));
 					// Invisible slots are recorded with borders, but the borders aren't rendered
 					if(myGroup != FetchModus.BG_GROUP_INVISIBLE) {
 						borderLocations[n] |= RENDER_SELF;
-						if (x == 0 || modus.getBackgroundGroupForSlot(getSlotAtVisualPosition(x-1, y)) != myGroup) borderLocations[n] |= DIR_LEFT;
-						if (x == 8 || modus.getBackgroundGroupForSlot(getSlotAtVisualPosition(x+1, y)) != myGroup) borderLocations[n] |= DIR_RIGHT;
-						if (y == 0 || modus.getBackgroundGroupForSlot(getSlotAtVisualPosition(x, y-1)) != myGroup) borderLocations[n] |= DIR_UP;
-						if (y == 3 || modus.getBackgroundGroupForSlot(getSlotAtVisualPosition(x, y+1)) != myGroup) borderLocations[n] |= DIR_DOWN;
+						if (x == 0 || modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x-1, y)) != myGroup) borderLocations[n] |= DIR_LEFT;
+						if (x == 8 || modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x+1, y)) != myGroup) borderLocations[n] |= DIR_RIGHT;
+						if (y == 0 || modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x, y-1)) != myGroup) borderLocations[n] |= DIR_UP;
+						if (y == 3 || modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x, y+1)) != myGroup) borderLocations[n] |= DIR_DOWN;
 					} else {
 						borderLocations[n] |= DIR_LEFT | DIR_RIGHT | DIR_UP | DIR_DOWN;
 					}
@@ -264,41 +254,41 @@ public abstract class ContainerScreenMixin extends Screen {
 			// Draw slot backgrounds, borders, and horizontal connectors
 			for(int y = 0; y < 4; y++) {
 				for(int x = 0; x < 9; x++) {
-					int slotIndex = getSlotAtVisualPosition(x, y);
+					int slotIndex = captchalogue_getSlotAtVisualPosition(x, y);
 					//int g = modus.getBackgroundGroupForSlot(slotIndex);
 					Slot slot = inventorySlots[slotIndex];
 					int which = borderLocations[x+y*9];
 					if((which & RENDER_SELF) == 0)
 						continue;
-					appendGreyQuad(bb, matrix, slot.xPosition, slot.yPosition, slot.xPosition+16, slot.yPosition+16, COL_SLOT);
+					captchalogue_appendGreyQuad(bb, matrix, slot.xPosition, slot.yPosition, slot.xPosition+16, slot.yPosition+16, COL_SLOT);
 					
 					if((which & DIR_UP) != 0)
-						appendGreyQuad(bb, matrix, slot.xPosition - ((which & DIR_LEFT) != 0 ? 1 : 0), slot.yPosition-1, slot.xPosition+16, slot.yPosition, COL_LEFT_TOP);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition - ((which & DIR_LEFT) != 0 ? 1 : 0), slot.yPosition-1, slot.xPosition+16, slot.yPosition, COL_LEFT_TOP);
 					if((which & DIR_LEFT) != 0)
-						appendGreyQuad(bb, matrix, slot.xPosition-1, slot.yPosition, slot.xPosition, slot.yPosition+16, COL_LEFT_TOP);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition-1, slot.yPosition, slot.xPosition, slot.yPosition+16, COL_LEFT_TOP);
 					if((which & DIR_DOWN) != 0)
-						appendGreyQuad(bb, matrix, slot.xPosition, slot.yPosition+16, slot.xPosition+16 + ((which & DIR_RIGHT) != 0 ? 1 : 0), slot.yPosition+17, COL_RIGHT_BOTTOM);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition, slot.yPosition+16, slot.xPosition+16 + ((which & DIR_RIGHT) != 0 ? 1 : 0), slot.yPosition+17, COL_RIGHT_BOTTOM);
 					if((which & DIR_RIGHT) != 0)
-						appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition, slot.xPosition+17, slot.yPosition+16, COL_RIGHT_BOTTOM);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition, slot.xPosition+17, slot.yPosition+16, COL_RIGHT_BOTTOM);
 					
 					// 1-pixel corners
 					if ((which & (DIR_DOWN | DIR_LEFT)) == (DIR_DOWN | DIR_LEFT))
-						appendGreyQuad(bb, matrix, slot.xPosition-1, slot.yPosition+16, slot.xPosition, slot.yPosition+17, COL_SLOT);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition-1, slot.yPosition+16, slot.xPosition, slot.yPosition+17, COL_SLOT);
 					if ((which & (DIR_UP | DIR_RIGHT)) == (DIR_UP | DIR_RIGHT))
-						appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition-1, slot.xPosition+17, slot.yPosition-1, COL_SLOT);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition-1, slot.xPosition+17, slot.yPosition-1, COL_SLOT);
 					
 					if(x < 8 && (which & DIR_RIGHT) == 0) {
 						// The connector has a border if either of the adjacent slots has a border on that side
 						Slot nextSlot = inventorySlots[slotIndex+1];
 						int nextWhich = borderLocations[x+1+y*9];
 						
-						appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition, nextSlot.xPosition, slot.yPosition+16, COL_SLOT);
+						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition, nextSlot.xPosition, slot.yPosition+16, COL_SLOT);
 						
 						if (((which | nextWhich) & DIR_UP) != 0) {
-							appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition-1, nextSlot.xPosition, slot.yPosition, COL_LEFT_TOP);
+							captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition-1, nextSlot.xPosition, slot.yPosition, COL_LEFT_TOP);
 						}
 						if (((which | nextWhich) & DIR_DOWN) != 0) {
-							appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition+16, nextSlot.xPosition, slot.yPosition+17, COL_RIGHT_BOTTOM);
+							captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition+16, nextSlot.xPosition, slot.yPosition+17, COL_RIGHT_BOTTOM);
 						}
 					}
 				}
@@ -307,8 +297,8 @@ public abstract class ContainerScreenMixin extends Screen {
 			// Draw vertical and diagonal connectors
 			for(int y = 0; y < 3; y++) {
 				for(int x = 0; x < 9; x++) {
-					int slotIndex = getSlotAtVisualPosition(x, y);
-					int belowSlotIndex = getSlotAtVisualPosition(x, y+1);
+					int slotIndex = captchalogue_getSlotAtVisualPosition(x, y);
+					int belowSlotIndex = captchalogue_getSlotAtVisualPosition(x, y+1);
 					Slot thisSlot = inventorySlots[slotIndex];
 					Slot belowSlot = inventorySlots[belowSlotIndex];
 					
@@ -317,18 +307,18 @@ public abstract class ContainerScreenMixin extends Screen {
 					int rightWhich = (x < 8 ? borderLocations[x+y*9+1] : 0);
 					
 					if ((which & DIR_DOWN) == 0) {
-						appendGreyQuad(bb, matrix, thisSlot.xPosition, thisSlot.yPosition+16, thisSlot.xPosition+16, belowSlot.yPosition, COL_SLOT);
+						captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition, thisSlot.yPosition+16, thisSlot.xPosition+16, belowSlot.yPosition, COL_SLOT);
 						if (((which | belowWhich) & DIR_LEFT) != 0) {
-							appendGreyQuad(bb, matrix, thisSlot.xPosition-1, thisSlot.yPosition+16, thisSlot.xPosition, belowSlot.yPosition, COL_LEFT_TOP);
+							captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition-1, thisSlot.yPosition+16, thisSlot.xPosition, belowSlot.yPosition, COL_LEFT_TOP);
 						}
 						if (((which | belowWhich) & DIR_RIGHT) != 0) {
-							appendGreyQuad(bb, matrix, thisSlot.xPosition+16, thisSlot.yPosition+16, thisSlot.xPosition+17, belowSlot.yPosition, COL_RIGHT_BOTTOM);
+							captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition+16, thisSlot.yPosition+16, thisSlot.xPosition+17, belowSlot.yPosition, COL_RIGHT_BOTTOM);
 						}
 					}
 					
 					if (x < 8 && ((which | belowWhich) & DIR_RIGHT) == 0 && ((which | rightWhich) & DIR_DOWN) == 0) {
 						Slot belowNextSlot = inventorySlots[belowSlotIndex+1];
-						appendGreyQuad(bb, matrix, thisSlot.xPosition+16, thisSlot.yPosition+16, belowNextSlot.xPosition, belowNextSlot.yPosition, COL_SLOT);
+						captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition+16, thisSlot.yPosition+16, belowNextSlot.xPosition, belowNextSlot.yPosition, COL_SLOT);
 					}
 				}
 			}

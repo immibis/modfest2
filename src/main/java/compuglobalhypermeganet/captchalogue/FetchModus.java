@@ -21,14 +21,16 @@ public abstract class FetchModus {
 	 * Queuestack should allow first or last hotbar slot to be selected
 	 * Queue/stack inventory should have extra borders to make the inventory look like a linear sequence. This requires changing the order of the slots.
 	 * Queuestack might require a different order still in order to use both the first and last in the hotbar. (How would queuestack array do this?)
+	 * 
+	 * create a SlotRemappingInventoryAdapter so we can avoid special-casing MODUS_SLOT everywhere.
 	 *
 	 * moduses:
 	 *  Done: Queue
 	 *  Done: Stack
 	 *  Done: Array
 	 *  Done: Memory
-	 *  
-	 *  Queuestack
+	 *  Done: Queuestack
+	 *
 	 *  Array of stacks/queues/queuestacks
 	 *  Hashtable
 	 *  Hashtable with arrays/stacks/queues/queuestack
@@ -101,6 +103,7 @@ public abstract class FetchModus {
 		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return true;
 		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return true;
 		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return true;
+		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return true;
 		return false;
 	}
 	
@@ -109,11 +112,13 @@ public abstract class FetchModus {
 	public static FetchModus ARRAY = new FetchModusArray();
 	public static FetchModus NULL = new FetchModusNull();
 	public static FetchModus MEMORY = new FetchModusMemory();
+	public static FetchModus QUEUESTACK = new FetchModusQueuestack();
 	public static FetchModus getFlyweightModus(ItemStack stack) {
 		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return QUEUE;
 		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return STACK;
 		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return ARRAY;
 		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return MEMORY;
+		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return QUEUESTACK;
 		return NULL;
 	}
 	public abstract boolean hasCustomInsert();
@@ -169,4 +174,6 @@ public abstract class FetchModus {
 	// E.g. this is called after someone double-clicks to pick up all items of a type and we're not sure whether it picked up any items out of their inventory.
 	// It's also called after an item is used because the item might have been used up.
 	public void afterPossibleInventoryChange(Container cont, PlayerInventory inv) {}
+
+	public void deinitialize(PlayerInventory inv) {}
 }

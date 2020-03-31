@@ -2,6 +2,7 @@ package compuglobalhypermeganet.captchalogue.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -26,7 +27,8 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 		return FetchModus.getModus((PlayerInventory)(Object)this);
 	}
 	
-	private boolean acceptAsModus(ItemStack stack) {
+	@Unique
+	private boolean captchalogue_acceptAsModus(ItemStack stack) {
 		PlayerInventory this_ = (PlayerInventory)(Object)this;
 		if (this_.getInvStack(FetchModus.MODUS_SLOT).isEmpty() && FetchModus.isModus(stack)) {
 			this_.setInvStack(FetchModus.MODUS_SLOT, stack.copy());
@@ -39,7 +41,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	@Inject(at = @At("HEAD"), method="insertStack(ILnet/minecraft/item/ItemStack;)Z", cancellable=true)
 	public void overrideInsertStack(int slot, ItemStack stack, CallbackInfoReturnable<Boolean> info) {
 		
-		if (acceptAsModus(stack)) {
+		if (captchalogue_acceptAsModus(stack)) {
 			stack.setCount(0);
 			info.setReturnValue(Boolean.TRUE);
 			return;
@@ -62,7 +64,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			if(stack.isEmpty())
 				return;
 			
-			if (acceptAsModus(stack)) {
+			if (captchalogue_acceptAsModus(stack)) {
 				stack.setCount(0);
 				info.cancel();
 				return;

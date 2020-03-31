@@ -3,6 +3,7 @@ package compuglobalhypermeganet.captchalogue.mixin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -45,13 +46,14 @@ public class SlotMixin implements ISlotMixin {
 		return invSlot;
 	}
 	
-	private boolean isPlayerSlot() {
+	@Unique
+	private boolean captchalogue_isPlayerSlot() {
 		return inventory instanceof PlayerInventory && invSlot < ((PlayerInventory)inventory).main.size();
 	}
 	
 	@Inject(at = @At(value="HEAD"), method="canTakeItems(Lnet/minecraft/entity/player/PlayerEntity;)Z", cancellable=true)
 	private void blockTakeItemsNonModusSlots(CallbackInfoReturnable<Boolean> info) {
-		if(isPlayerSlot()) {
+		if(captchalogue_isPlayerSlot()) {
 			if (invSlot == FetchModus.MODUS_SLOT)
 				return;
 			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot((PlayerInventory)inventory, invSlot)) {
@@ -62,7 +64,7 @@ public class SlotMixin implements ISlotMixin {
 	
 	@Inject(at = @At(value="HEAD"), method="canInsert(Lnet/minecraft/item/ItemStack;Z)Z", cancellable=true)
 	private void blockInsertIntoNonModusSlots(ItemStack item, CallbackInfoReturnable<Boolean> info) {
-		if(isPlayerSlot()) {
+		if(captchalogue_isPlayerSlot()) {
 			if (invSlot == FetchModus.MODUS_SLOT) {
 				if (!FetchModus.isModus(item))
 					info.setReturnValue(false);
@@ -83,16 +85,18 @@ public class SlotMixin implements ISlotMixin {
 	
 	@Inject(at = @At(value="HEAD"), method="setStack(Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	private void overrideSetStack(ItemStack stack, CallbackInfo info) {
-		if (isPlayerSlot()) {
+		if (captchalogue_isPlayerSlot()) {
 			if (FetchModus.isProcessingPacket.get())
 				return; // When the server is sending us the inventory state, no silly business - just replicate exactly what the server says.
 
 			if (invSlot == FetchModus.MODUS_SLOT) {
 				IPlayerInventoryMixin m = (IPlayerInventoryMixin)inventory;
+				FetchModus oldModus = m.getFetchModus();
 				// TODO: what should happen if the player has no modus or if the wrong item is somehow inserted here? They should get a null modus.
 				//if (!stack.isEmpty() && FetchModus.isModus(stack)) {
 					//m.setFetchModus(FetchModus.createModus(stack));
 				((PlayerInventory)inventory).main.set(FetchModus.MODUS_SLOT, stack);
+				oldModus.deinitialize((PlayerInventory)inventory);
 				m.getFetchModus().initialize((PlayerInventory)inventory);
 				info.cancel();
 				//}
@@ -109,7 +113,7 @@ public class SlotMixin implements ISlotMixin {
 	// TODO: maybe we should wait until markDirty to move ANY items to their fetchModus locations? That might also fix dragging? But other mods don't call markDirty...
 	@Inject(at = @At(value="HEAD"), method="markDirty()V")
 	private void onMarkDirty(CallbackInfo info) {
-		if (isPlayerSlot()) {
+		if (captchalogue_isPlayerSlot()) {
 			if (invSlot == FetchModus.MODUS_SLOT)
 				return;
 			if (inventory.getInvStack(invSlot).isEmpty()) {
@@ -122,7 +126,7 @@ public class SlotMixin implements ISlotMixin {
 	@Inject(at = @At(value="HEAD"), method="getBackgroundSprite()Lcom/mojang/datafixers/util/Pair;", cancellable=true)
 	@Environment(EnvType.CLIENT)
 	public void getBackgroundSprite(CallbackInfoReturnable<Pair<Identifier, Identifier>> info) {
-		if (isPlayerSlot()) {
+		if (captchalogue_isPlayerSlot()) {
 			if(invSlot == FetchModus.MODUS_SLOT) {
 				info.setReturnValue(new Pair<Identifier, Identifier>(SpriteAtlasTexture.BLOCK_ATLAS_TEX, FetchModus.MODUS_SLOT_BG_IMAGE));
 			}

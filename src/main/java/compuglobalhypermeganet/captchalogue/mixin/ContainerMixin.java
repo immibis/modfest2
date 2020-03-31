@@ -2,6 +2,7 @@ package compuglobalhypermeganet.captchalogue.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -94,7 +95,8 @@ public abstract class ContainerMixin implements IContainerMixin {
 		}
 	}
 	
-	private PlayerInventory findPlayerInventory(int slotIdHint) {
+	@Unique
+	private PlayerInventory captchalogue_findPlayerInventory(int slotIdHint) {
 		Container this_ = (Container)(Object)this;
 		if(slotIdHint >= 0 && slotIdHint < this_.slots.size()) {
 			Slot slot = this_.slots.get(slotIdHint);
@@ -113,7 +115,7 @@ public abstract class ContainerMixin implements IContainerMixin {
 
 			// PICKUP_ALL in *other* slots can affect our slots... but we need to find the player inventory first
 
-			PlayerInventory inv = findPlayerInventory(slotId);
+			PlayerInventory inv = captchalogue_findPlayerInventory(slotId);
 			if(inv == null)
 				return; // can't find player inventory, so can't execute hook
 
