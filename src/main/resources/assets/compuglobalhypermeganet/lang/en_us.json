@@ -7,5 +7,14 @@
 	"item.compuglobalhypermeganet.stack_array_fetch_modus": "Fetch Modus - Stack Array",
 	"item.compuglobalhypermeganet.queuestack_array_fetch_modus": "Fetch Modus - Queuestack Array",
 	"item.compuglobalhypermeganet.memory_fetch_modus": "Fetch Modus - Memory",
-	"itemGroup.compuglobalhypermeganet.captchalogue": "Captchalogue"
+	"item.compuglobalhypermeganet.tree_fetch_modus": "Fetch Modus - Tree",
+	"itemGroup.compuglobalhypermeganet.captchalogue": "Captchalogue",
+	
+	
+	"item.compuglobalhypermeganet.hashtable_fetch_modus": "Fetch Modus - Hashtable",
+	"item.compuglobalhypermeganet.queue_hashtable_fetch_modus": "Fetch Modus - Queue Hashtable",
+	"item.compuglobalhypermeganet.stack_hashtable_fetch_modus": "Fetch Modus - Stack Hashtable",
+	"item.compuglobalhypermeganet.queuestack_hashtable_fetch_modus": "Fetch Modus - Queuestack Hashtable",
+	"item.compuglobalhypermeganet.array_hashtable_fetch_modus": "Fetch Modus - Array Hashtable",
+	"item.compuglobalhypermeganet.tree_hashtable_fetch_modus": "Fetch Modus - Tree Hashtable"
 }

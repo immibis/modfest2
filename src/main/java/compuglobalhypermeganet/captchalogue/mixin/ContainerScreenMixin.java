@@ -1,9 +1,9 @@
 package compuglobalhypermeganet.captchalogue.mixin;
 
 import java.awt.Rectangle;
+import java.awt.geom.Rectangle2D;
 import java.util.Arrays;
 
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -11,28 +11,29 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import com.mojang.blaze3d.systems.RenderSystem;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusGuiState;
+import compuglobalhypermeganet.captchalogue.IContainerMixin;
+import compuglobalhypermeganet.captchalogue.IContainerScreenMixin;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.ISlotMixin;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
+import compuglobalhypermeganet.captchalogue.client.AdditionalContainerScreenElement;
+import compuglobalhypermeganet.captchalogue.client.DrawerImpl;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.ContainerScreen;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.BufferRenderer;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.container.Slot;
+import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
 @Mixin(ContainerScreen.class)
-public abstract class ContainerScreenMixin extends Screen {
+public abstract class ContainerScreenMixin extends Screen implements IContainerScreenMixin {
 	
 	// not used, just appeases the compiler
 	protected ContainerScreenMixin(Text title) {
@@ -114,19 +115,19 @@ public abstract class ContainerScreenMixin extends Screen {
 				int belowSlotNum = y == 3 ? -1 : (x + (y == 2 ? 0 : y + 2)*9); // adjust Y coordinate so hotbar is last row instead of first for these checks
 				int rightSlotNum = x == 8 ? -1 : (slotNum + 1);
 				
-				Slot here = inventorySlots[slotNum];
+				ISlotMixin here = (ISlotMixin)inventorySlots[slotNum];
 				if (belowSlotNum >= 0) {
-					Slot below = inventorySlots[belowSlotNum];
-					if (below.yPosition < here.yPosition + 14 || below.yPosition > here.yPosition + 40)
+					ISlotMixin below = (ISlotMixin)inventorySlots[belowSlotNum];
+					if (below.captchalogue_getOriginalYPosition() < here.captchalogue_getOriginalYPosition() + 14 || below.captchalogue_getOriginalYPosition() > here.captchalogue_getOriginalYPosition() + 40)
 						unsupportedLayout = true;
-					if (below.xPosition < here.xPosition - 4 || below.xPosition > here.xPosition + 4)
+					if (below.captchalogue_getOriginalXPosition() < here.captchalogue_getOriginalXPosition() - 4 || below.captchalogue_getOriginalXPosition() > here.captchalogue_getOriginalXPosition() + 4)
 						unsupportedLayout = true;
 				}
 				if (rightSlotNum >= 0) {
-					Slot right= inventorySlots[rightSlotNum];
-					if (right.xPosition < here.xPosition + 14 || right.xPosition > here.xPosition + 40)
+					ISlotMixin right = (ISlotMixin)inventorySlots[rightSlotNum];
+					if (right.captchalogue_getOriginalXPosition() < here.captchalogue_getOriginalXPosition() + 14 || right.captchalogue_getOriginalXPosition() > here.captchalogue_getOriginalXPosition() + 40)
 						unsupportedLayout = true;
-					if (right.yPosition < here.yPosition - 4 || right.yPosition > here.yPosition + 4)
+					if (right.captchalogue_getOriginalYPosition() < here.captchalogue_getOriginalYPosition() - 4 || right.captchalogue_getOriginalYPosition() > here.captchalogue_getOriginalYPosition() + 4)
 						unsupportedLayout = true;
 				}
 			}
@@ -142,7 +143,7 @@ public abstract class ContainerScreenMixin extends Screen {
 		int t = Integer.MAX_VALUE, l = Integer.MAX_VALUE, b = Integer.MIN_VALUE, r = Integer.MIN_VALUE;
 		for(Slot s : inventorySlots) {
 			// include the traditional 1 pixel border
-			int st = s.yPosition - 1, sl = s.xPosition - 1, sb = st + 18, sr = sl + 18;
+			int st = ((ISlotMixin)s).captchalogue_getOriginalYPosition() - 1, sl = ((ISlotMixin)s).captchalogue_getOriginalXPosition() - 1, sb = st + 18, sr = sl + 18;
 			if(t > st) t = st;
 			if(l > sl) l = sl;
 			if(b < sb) b = sb;
@@ -184,18 +185,8 @@ public abstract class ContainerScreenMixin extends Screen {
 	}
 	
 	@Unique
-	private void captchalogue_appendGreyQuad(BufferBuilder bb, Matrix4f matrix, float x1, float y1, float x2, float y2, float colour) {
-		bb.vertex(matrix, x1, y1, 0).color(colour, colour, colour, 1.0f).next();
-		bb.vertex(matrix, x1, y2, 0).color(colour, colour, colour, 1.0f).next();
-		bb.vertex(matrix, x2, y2, 0).color(colour, colour, colour, 1.0f).next();
-		bb.vertex(matrix, x2, y1, 0).color(colour, colour, colour, 1.0f).next();
-		
-		
-		/*bb.vertex(x+x1, y+y1, 0).color(colour, colour, colour, 1.0f).next();
-		bb.vertex(x+x1, y+y2, 0).color(colour, colour, colour, 1.0f).next();
-		bb.vertex(x+x2, y+y2, 0).color(colour, colour, colour, 1.0f).next();
-		bb.vertex(x+x2, y+y1, 0).color(colour, colour, colour, 1.0f).next();
-		System.out.println("draw quad "+x1+","+y1+" "+x2+","+y2);*/
+	private FetchModusGuiState getFetchModusGuiState() {
+		return ((IContainerMixin)((ContainerScreen<?>)(Object)this).getContainer()).getFetchModusGuiState();
 	}
 	
 	private int mouseX, mouseY;
@@ -203,6 +194,16 @@ public abstract class ContainerScreenMixin extends Screen {
 	public void saveMousePosition(int mouseX, int mouseY, float deltaTime, CallbackInfo info) {
 		this.mouseX = mouseX;
 		this.mouseY = mouseY;
+		
+		if (unsupportedLayout)
+			return;
+		
+		FetchModusGuiState gs = getFetchModusGuiState();
+		if(gs.area == null)
+			gs.area = new Rectangle2D.Double();
+		gs.area.setRect(this.inventoryRect);
+		
+		gs.onBeforeDraw(this);
 	}
 	
 	@Inject(at=@At(value="INVOKE", shift=At.Shift.AFTER, target="Lnet/minecraft/client/gui/screen/ingame/ContainerScreen;drawBackground(FII)V"), method="render(IIF)V")
@@ -213,8 +214,7 @@ public abstract class ContainerScreenMixin extends Screen {
 		// 0xC6C6C6 (198,198,198) is the standard Minecraft ContainerScreen background colour
 		// Some mod ContainerScreens use different colours. FUTURE: do something dynamic with the background texture. (Maybe use the most prevalent colour; still won't work for non-solid-colour backgrounds)
 		
-		Matrix4f matrix = Matrix4f.translate(this.x, this.y, 0.0f);
-		//Matrix4f matrix = null;
+		DrawerImpl d = captchalogue_getDrawerImpl();
 		
 		if(modus.overridesGuiSlotVisualConnectivity()) {
 			
@@ -223,12 +223,10 @@ public abstract class ContainerScreenMixin extends Screen {
 			final float COL_RIGHT_BOTTOM = 255.0f/255.0f; // standard colour for right and bottom side border.
 			final float COL_LEFT_TOP = 55.0f/255.0f; // standard colour for top and left side border.
 			
-			RenderSystem.disableTexture();
-			BufferBuilder bb = Tessellator.getInstance().getBuffer();
-			bb.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+			d.beginRenderingSolidQuads();
 			
 			// Hide everything that's already there. We draw our own slots. (inventoryRect includes the 1-pixel edges)
-			captchalogue_appendGreyQuad(bb, matrix, inventoryRect.x, inventoryRect.y, inventoryRect.x+inventoryRect.width, inventoryRect.y+inventoryRect.height, COL_INVISIBLE);
+			d.appendSolidQuad(inventoryRect.x, inventoryRect.y, inventoryRect.x+inventoryRect.width, inventoryRect.y+inventoryRect.height, COL_INVISIBLE, COL_INVISIBLE, COL_INVISIBLE, 1.0f);
 			
 			final int DIR_UP = 1;
 			final int DIR_DOWN = 2;
@@ -263,35 +261,35 @@ public abstract class ContainerScreenMixin extends Screen {
 					int which = borderLocations[x+y*9];
 					if((which & RENDER_SELF) == 0)
 						continue;
-					captchalogue_appendGreyQuad(bb, matrix, slot.xPosition, slot.yPosition, slot.xPosition+16, slot.yPosition+16, COL_SLOT);
+					d.appendSolidQuad(slot.xPosition, slot.yPosition, slot.xPosition+16, slot.yPosition+16, COL_SLOT, COL_SLOT, COL_SLOT, 1.0f);
 					
 					if((which & DIR_UP) != 0)
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition - ((which & DIR_LEFT) != 0 ? 1 : 0), slot.yPosition-1, slot.xPosition+16, slot.yPosition, COL_LEFT_TOP);
+						d.appendSolidQuad(slot.xPosition - ((which & DIR_LEFT) != 0 ? 1 : 0), slot.yPosition-1, slot.xPosition+16, slot.yPosition, COL_LEFT_TOP, COL_LEFT_TOP, COL_LEFT_TOP, 1.0f);
 					if((which & DIR_LEFT) != 0)
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition-1, slot.yPosition, slot.xPosition, slot.yPosition+16, COL_LEFT_TOP);
+						d.appendSolidQuad(slot.xPosition-1, slot.yPosition, slot.xPosition, slot.yPosition+16, COL_LEFT_TOP, COL_LEFT_TOP, COL_LEFT_TOP, 1.0f);
 					if((which & DIR_DOWN) != 0)
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition, slot.yPosition+16, slot.xPosition+16 + ((which & DIR_RIGHT) != 0 ? 1 : 0), slot.yPosition+17, COL_RIGHT_BOTTOM);
+						d.appendSolidQuad(slot.xPosition, slot.yPosition+16, slot.xPosition+16 + ((which & DIR_RIGHT) != 0 ? 1 : 0), slot.yPosition+17, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, 1.0f);
 					if((which & DIR_RIGHT) != 0)
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition, slot.xPosition+17, slot.yPosition+16, COL_RIGHT_BOTTOM);
+						d.appendSolidQuad(slot.xPosition+16, slot.yPosition, slot.xPosition+17, slot.yPosition+16, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, 1.0f);
 					
 					// 1-pixel corners
 					if ((which & (DIR_DOWN | DIR_LEFT)) == (DIR_DOWN | DIR_LEFT))
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition-1, slot.yPosition+16, slot.xPosition, slot.yPosition+17, COL_SLOT);
+						d.appendSolidQuad(slot.xPosition-1, slot.yPosition+16, slot.xPosition, slot.yPosition+17, COL_SLOT, COL_SLOT, COL_SLOT, 1.0f);
 					if ((which & (DIR_UP | DIR_RIGHT)) == (DIR_UP | DIR_RIGHT))
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition-1, slot.xPosition+17, slot.yPosition-1, COL_SLOT);
+						d.appendSolidQuad(slot.xPosition+16, slot.yPosition-1, slot.xPosition+17, slot.yPosition-1, COL_SLOT, COL_SLOT, COL_SLOT, 1.0f);
 					
 					if(x < 8 && (which & DIR_RIGHT) == 0) {
 						// The connector has a border if either of the adjacent slots has a border on that side
 						Slot nextSlot = inventorySlots[slotIndex+1];
 						int nextWhich = borderLocations[x+1+y*9];
 						
-						captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition, nextSlot.xPosition, slot.yPosition+16, COL_SLOT);
+						d.appendSolidQuad(slot.xPosition+16, slot.yPosition, nextSlot.xPosition, slot.yPosition+16, COL_SLOT, COL_SLOT, COL_SLOT, 1.0f);
 						
 						if (((which | nextWhich) & DIR_UP) != 0) {
-							captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition-1, nextSlot.xPosition, slot.yPosition, COL_LEFT_TOP);
+							d.appendSolidQuad(slot.xPosition+16, slot.yPosition-1, nextSlot.xPosition, slot.yPosition, COL_LEFT_TOP, COL_LEFT_TOP, COL_LEFT_TOP, 1.0f);
 						}
 						if (((which | nextWhich) & DIR_DOWN) != 0) {
-							captchalogue_appendGreyQuad(bb, matrix, slot.xPosition+16, slot.yPosition+16, nextSlot.xPosition, slot.yPosition+17, COL_RIGHT_BOTTOM);
+							d.appendSolidQuad(slot.xPosition+16, slot.yPosition+16, nextSlot.xPosition, slot.yPosition+17, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, 1.0f);
 						}
 					}
 				}
@@ -310,18 +308,18 @@ public abstract class ContainerScreenMixin extends Screen {
 					int rightWhich = (x < 8 ? borderLocations[x+y*9+1] : 0);
 					
 					if ((which & DIR_DOWN) == 0) {
-						captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition, thisSlot.yPosition+16, thisSlot.xPosition+16, belowSlot.yPosition, COL_SLOT);
+						d.appendSolidQuad(thisSlot.xPosition, thisSlot.yPosition+16, thisSlot.xPosition+16, belowSlot.yPosition, COL_SLOT, COL_SLOT, COL_SLOT, 1.0f);
 						if (((which | belowWhich) & DIR_LEFT) != 0) {
-							captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition-1, thisSlot.yPosition+16, thisSlot.xPosition, belowSlot.yPosition, COL_LEFT_TOP);
+							d.appendSolidQuad(thisSlot.xPosition-1, thisSlot.yPosition+16, thisSlot.xPosition, belowSlot.yPosition, COL_LEFT_TOP, COL_LEFT_TOP, COL_LEFT_TOP, 1.0f);
 						}
 						if (((which | belowWhich) & DIR_RIGHT) != 0) {
-							captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition+16, thisSlot.yPosition+16, thisSlot.xPosition+17, belowSlot.yPosition, COL_RIGHT_BOTTOM);
+							d.appendSolidQuad(thisSlot.xPosition+16, thisSlot.yPosition+16, thisSlot.xPosition+17, belowSlot.yPosition, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, COL_RIGHT_BOTTOM, 1.0f);
 						}
 					}
 					
 					if (x < 8 && ((which | belowWhich) & DIR_RIGHT) == 0 && ((which | rightWhich) & DIR_DOWN) == 0) {
 						Slot belowNextSlot = inventorySlots[belowSlotIndex+1];
-						captchalogue_appendGreyQuad(bb, matrix, thisSlot.xPosition+16, thisSlot.yPosition+16, belowNextSlot.xPosition, belowNextSlot.yPosition, COL_SLOT);
+						d.appendSolidQuad(thisSlot.xPosition+16, thisSlot.yPosition+16, belowNextSlot.xPosition, belowNextSlot.yPosition, COL_SLOT, COL_SLOT, COL_SLOT, 1.0f);
 					}
 				}
 			}
@@ -374,10 +372,23 @@ public abstract class ContainerScreenMixin extends Screen {
 				}
 			}*/
 			
-			bb.end();
-			BufferRenderer.draw(bb);
-			RenderSystem.enableTexture();
+			d.endRenderingSolidQuads();
 		}
+		
+		FetchModusGuiState gs = getFetchModusGuiState();
+		gs.drawAdditionalBackground(captchalogue_drawerImpl);
+	}
+	
+	@Unique
+	private DrawerImpl captchalogue_drawerImpl;
+	
+	@Unique
+	private DrawerImpl captchalogue_getDrawerImpl() {
+		if(captchalogue_drawerImpl == null)
+			captchalogue_drawerImpl = new DrawerImpl();
+		Matrix4f matrix = Matrix4f.translate(this.x, this.y, 0.0f);
+		captchalogue_drawerImpl.setMatrix(matrix);
+		return captchalogue_drawerImpl;
 	}
 	
 	@Inject(at=@At("HEAD"), method="drawSlot(Lnet/minecraft/container/Slot;)V", cancellable=true)
@@ -386,11 +397,16 @@ public abstract class ContainerScreenMixin extends Screen {
 		if(slot.inventory instanceof PlayerInventory) {
 			PlayerInventory inv = (PlayerInventory)slot.inventory;
 			int slotNum = ((ISlotMixin)slot).captchalogue_getSlotNum();
-			if(slotNum < 0 || slotNum >= 36 || slotNum == CaptchalogueMod.MODUS_SLOT)
+			if(slotNum < 0 || slotNum >= 36)
 				return;
 			
 			if (modus.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
 				info.cancel();
+			} else {
+				FetchModusGuiState gs = getFetchModusGuiState();
+				DrawerImpl d = captchalogue_getDrawerImpl();
+				if(slot.inventory instanceof PlayerInventory)
+					gs.beforeDrawSlot(slot, d);
 			}
 			/*
 			if(!modus.canTakeFromSlot(inv, slotNum)) {
@@ -409,8 +425,48 @@ public abstract class ContainerScreenMixin extends Screen {
 		}
 	}
 	
+	@Inject(at=@At("RETURN"),method="drawSlot(Lnet/minecraft/container/Slot;)V")
+	public void afterDrawSlot(Slot slot, CallbackInfo info) {
+		FetchModusGuiState gs = getFetchModusGuiState();
+		DrawerImpl d = captchalogue_getDrawerImpl();
+		if(slot.inventory instanceof PlayerInventory)
+			gs.afterDrawSlot(slot, d);
+	}
+	
+	private AdditionalContainerScreenElement extraGuiElement;
+	
+	@Inject(at=@At("HEAD"), method="init()V")
+	public void additionalInit(CallbackInfo info) {
+		extraGuiElement = new AdditionalContainerScreenElement((ContainerScreen)(Object)this);
+		//children.add(extraGuiElement); // accounts for mouse and keyboard callbacks, but not rendering // actually most callbacks don't go through this so we have to extend them anyway
+	}
+	
+	@Inject(at=@At("HEAD"), method="mouseDragged(DDIDD)Z")
+	public void hookMouseDragged(double x, double y, int button, double dx, double dy, CallbackInfoReturnable<Boolean> info) {
+		// XXX: return value ignored
+		extraGuiElement.mouseDragged(x, y, button, dx, dy);
+	}
+	
+	@Inject(at=@At("HEAD"), method="mouseClicked(DDI)Z")
+	public void hookMouseClicked(double x, double y, int button, CallbackInfoReturnable<Boolean> info) {
+		// XXX: return value ignored
+		extraGuiElement.mouseClicked(x, y, button);
+	}
+	
 	@Shadow
 	public abstract boolean isPointOverSlot(Slot slot, double x, double y);
+	
+	@Inject(at=@At("HEAD"), method="isPointOverSlot(Lnet/minecraft/container/slot;DD)Z", cancellable=true)
+	public void overrideIsPointOverSlot(Slot slot, double x, double y, CallbackInfoReturnable<Boolean> info) {
+		if(!(slot.inventory instanceof PlayerInventory))
+			return;
+		FetchModusGuiState gs = getFetchModusGuiState();
+		int val = gs.overridesIsPointOverSlot(slot, x-this.x, y-this.y);
+		if(val == 0)
+			info.setReturnValue(Boolean.FALSE);
+		else if(val == 1)
+			info.setReturnValue(Boolean.TRUE);
+	}
 	
 	@Shadow
 	protected Slot focusedSlot;
@@ -443,5 +499,19 @@ public abstract class ContainerScreenMixin extends Screen {
 			return true;
 		}
 		return false;
+	}
+	
+	@Shadow public abstract Slot getSlotAt(double x, double y);
+	@Shadow public abstract void onMouseClick(Slot slot, int invSlot, int button, SlotActionType slotActionType);
+	
+	@Override public int captchalogue_getGuiX() {return x;}
+	@Override public int captchalogue_getGuiY() {return y;}
+	@Override
+	public Slot captchalogue_getSlotAt(double x, double y) {
+		return getSlotAt(x, y);
+	}
+	@Override
+	public void captchalogue_onMouseClick(Slot slot, int invSlot, int button, SlotActionType slotActionType) {
+		onMouseClick(slot, invSlot, button, slotActionType);
 	}
 }

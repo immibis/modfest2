@@ -37,8 +37,8 @@ public class FetchModusMemory extends FetchModus {
 	}
 	
 	@Override
-	public Object createContainerState(Container cont, PlayerInventory inv) {
-		return new State(inv);
+	public FetchModusGuiState createGuiState(Container cont, PlayerInventory inv) {
+		return new GuiState(inv);
 	}
 	
 	@Override
@@ -50,7 +50,7 @@ public class FetchModusMemory extends FetchModus {
 		if(actionType != SlotActionType.PICKUP && actionType != SlotActionType.QUICK_MOVE) // normal click or shift-click on slot
 			return true;
 		
-		State state = (State)((IContainerMixin)cont).getFetchModusState(this, plinv);
+		GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
 		
 		// Client generates random seed; sends it on every click (in ClickWindowC2SPacket); server copies it.
 		// If the client has changed the random seed then the server re-randomizes its inventory mapping based on the new seed.
@@ -147,7 +147,7 @@ public class FetchModusMemory extends FetchModus {
 		if (isNormalSlot(slotIndex))
 			return false; // no override
 		
-		State state = (State)((IContainerMixin)screen.getContainer()).getFetchModusState(this, inv);
+		GuiState state = (GuiState)((IContainerMixin)screen.getContainer()).getFetchModusGuiState();
 		
 		// really hacky place to put the timeout check!
 		if (state.timeoutAt != 0 && System.nanoTime() - state.timeoutAt > 0) {
@@ -220,7 +220,7 @@ public class FetchModusMemory extends FetchModus {
 	public Slot overrideFocusedSlot(ContainerScreen<?> screen, PlayerInventory inv, int slot, Slot focusedSlot) {
 		if (isNormalSlot(slot) || slot == CaptchalogueMod.MODUS_SLOT)
 			return focusedSlot;
-		State state = (State)((IContainerMixin)screen.getContainer()).getFetchModusState(this, inv);
+		GuiState state = (GuiState)((IContainerMixin)screen.getContainer()).getFetchModusGuiState();
 		if (slot == state.revealedSlot1 || slot == state.revealedSlot2) {
 			// Look for the real slot which holds the item we are hovering over
 			for(Slot otherSlot : screen.getContainer().slots) {
@@ -241,7 +241,7 @@ public class FetchModusMemory extends FetchModus {
 		return isNormalSlot(slot);
 	}
 	
-	public static class State {
+	public static class GuiState extends FetchModusGuiState {
 		// [MODUS_SLOT] is unused.
 		// Maps display slot number -> underlying slot number.
 		public int[] randomLayout = new int[36];
@@ -253,7 +253,7 @@ public class FetchModusMemory extends FetchModus {
 		
 		public int randomSeed;
 		
-		public State(PlayerInventory inv) {
+		public GuiState(PlayerInventory inv) {
 			setup(inv, inv.player.world.random.nextInt());
 		}
 		

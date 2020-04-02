@@ -15,13 +15,12 @@ public abstract class FetchModus {
 	/*
 	 * TODO for moduses:
 	 * Indicators for which slots are insertable/extractable (based on cursor item)
-	 * Better merging of consecutive identical items
+	 * Better merging of consecutive identical items (queue/stack/queuestack)
 	 * Fix creative pick-block
-	 * Queuestack should allow first or last hotbar slot to be selected
 	 * Queue/stack inventory should have extra borders to make the inventory look like a linear sequence. This requires changing the order of the slots.
 	 * Queuestack might require a different order still in order to use both the first and last in the hotbar. (How would queuestack array do this?)
-	 * 
-	 * create a SlotRemappingInventoryAdapter so we can avoid special-casing MODUS_SLOT everywhere.
+	 *
+	 * Add an item that turns all textures to linear interpolation when you hold it in your inventory.
 	 *
 	 * moduses:
 	 *  Done: Queue
@@ -29,8 +28,8 @@ public abstract class FetchModus {
 	 *  Done: Array
 	 *  Done: Memory
 	 *  Done: Queuestack
-	 *
-	 *  Array of stacks/queues/queuestacks
+	 *  Done: Array of stacks/queues/queuestacks
+	 *  
 	 *  Hashtable
 	 *  Hashtable with arrays/stacks/queues/queuestack
 	 *  Tree
@@ -58,11 +57,13 @@ public abstract class FetchModus {
 	 * Give players a modus when they spawn
 	 * Drop / violently eject oldest items when items are added to a full modus
 	 * Violently eject items when modus is removed?
+	 * 
+	 * TODO: Make the tree and hashtable work when the server and client languages don't match.
 	 */
 	
 	public static ThreadLocal<Boolean> isProcessingPacket = ThreadLocal.withInitial(() -> Boolean.FALSE);
 	
-	static void compactItemsToLowerIndices(InventoryWrapper inv, int start) {
+	static int compactItemsToLowerIndices(InventoryWrapper inv, int start) {
 		int to = start;
 		int from = start;
 		while(from < inv.getNumSlots()) {
@@ -73,10 +74,12 @@ public abstract class FetchModus {
 			}
 			from++;
 		}
+		int numUsedSlots = to;
 		while(to < inv.getNumSlots()) {
 			inv.setInvStack(to, ItemStack.EMPTY);
 			to++;
 		}
+		return numUsedSlots;
 	}
 	
 	public boolean setStackInSlot(PlayerInventory inventory, int slot, ItemStack stack) {return false;} // return true to override
@@ -98,7 +101,7 @@ public abstract class FetchModus {
 		return false; // return true to override
 	}
 
-	public Object createContainerState(Container cont, PlayerInventory inv) {
+	public FetchModusGuiState createGuiState(Container cont, PlayerInventory inv) {
 		return null;
 	}
 	public boolean resetStateWhenInventoryClosed() {return true;}

@@ -10,10 +10,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusGuiState;
 import compuglobalhypermeganet.captchalogue.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.ISlotMixin;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
+import compuglobalhypermeganet.captchalogue.ModusRegistry;
 import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
 import net.minecraft.container.SlotActionType;
@@ -189,17 +191,45 @@ public abstract class ContainerMixin implements IContainerMixin {
 		}
 	}
 	
-	private Object fetchModusState;
+	private FetchModusGuiState fetchModusState;
 	private FetchModus stateForModus;
 	
+	@Unique
+	private Slot findPlayerInventorySlot(int slot) {
+		for(Slot s : ((Container)(Object)this).slots) {
+			if(((ISlotMixin)s).captchalogue_getSlotNum() == slot && s.inventory instanceof PlayerInventory)
+				return s;
+		}
+		return null;
+	}
+	
+	@Unique
+	private void captchalogue_resetSlotPositions() {
+		for(Slot s : ((Container)(Object)this).slots) {
+			// XXX: why aren't we using @Shadow for slots?
+			ISlotMixin m = (ISlotMixin)s;
+			m.captchalogue_setPosition(m.captchalogue_getOriginalXPosition(), m.captchalogue_getOriginalYPosition());
+		}
+	}
+	
 	@Override
-	public Object getFetchModusState(FetchModus modus, PlayerInventory inv) {
+	public FetchModusGuiState getFetchModusGuiState() {
+		
+		Slot modusSlot = findPlayerInventorySlot(CaptchalogueMod.MODUS_SLOT);
+		FetchModus modus = null;
+		if(modusSlot != null)
+			modus = ModusRegistry.getModus(modusSlot.getStack());
+		
 		if (stateForModus != modus) {
 			fetchModusState = null;
 			stateForModus = modus;
+			captchalogue_resetSlotPositions();
 		}
-		if (fetchModusState == null)
-			fetchModusState = modus.createContainerState((Container)(Object)this, inv);
+		if (fetchModusState == null && modus != null) {
+			fetchModusState = modus.createGuiState((Container)(Object)this, (PlayerInventory)modusSlot.inventory);
+			if (fetchModusState == null)
+				fetchModusState = FetchModusGuiState.NULL_GUI_STATE;
+		}
 		return fetchModusState;
 	}
 }

@@ -15,7 +15,9 @@ import compuglobalhypermeganet.captchalogue.InventoryUtils;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
@@ -98,6 +100,8 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			info.setReturnValue(Float.valueOf(ItemStack.EMPTY.getMiningSpeed(block)));
 	}
 	
+	
+	
 	public int lastSelectedSlot;
 	
 	@Inject(at = @At("RETURN"), method="<init>*")
@@ -111,5 +115,18 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 		FetchModus modus = getFetchModus();
 		InventoryUtils.ensureSelectedSlotIsUnblocked(modus, (PlayerInventory)(Object)this, lastSelectedSlot, false);
 		lastSelectedSlot = selectedSlot;
+	}
+	
+	
+	
+	@Inject(at = @At("RETURN"), method="<init>(Lnet/minecraft/entity/player/PlayerEntity;)V")
+	public void initDefaultModus(PlayerEntity player, CallbackInfo info) {
+		if (!player.world.isClient()) {
+			PlayerInventory inv = (PlayerInventory)(Object)this;
+			Item modusType = CaptchalogueMod.DEFAULT_MODUSES.get(player.world.random.nextInt(CaptchalogueMod.DEFAULT_MODUSES.size()));
+			if(inv.getInvStack(CaptchalogueMod.MODUS_SLOT).isEmpty()) {
+				inv.setInvStack(CaptchalogueMod.MODUS_SLOT, new ItemStack(modusType));
+			}
+		}
 	}
 }

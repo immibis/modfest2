@@ -2,6 +2,7 @@ package compuglobalhypermeganet.captchalogue.mixin;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -43,6 +44,22 @@ public class SlotMixin implements ISlotMixin {
 	
 	@Shadow @Final private int invSlot;
 	@Shadow @Final public Inventory inventory;
+	
+	@Unique private int originalX;
+	@Unique private int originalY;
+	
+	@Shadow @Mutable public int xPosition;
+	@Shadow @Mutable public int yPosition;
+	
+	@Override public void captchalogue_setPosition(int x, int y) {xPosition = x; yPosition = y;}
+	@Override public int captchalogue_getOriginalXPosition() {return originalX;}
+	@Override public int captchalogue_getOriginalYPosition() {return originalY;}
+	
+	@Inject(at=@At("RETURN"), method="<init>*")
+	public void afterInit(CallbackInfo info) {
+		originalX = xPosition;
+		originalY = yPosition;
+	}
 	
 	@Override
 	public int captchalogue_getSlotNum() {

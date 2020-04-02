@@ -31,7 +31,7 @@ public abstract class InventoryWrapper {
 		}
 		@Override
 		public int getNumSlots() {
-			return base.getInvSize() - 1;
+			return base.main.size() - 1; // don't include offhand, armour, etc
 		}
 		@Override
 		public ItemStack getInvStack(int slot) {

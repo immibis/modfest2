@@ -19,6 +19,7 @@ public class ModusRegistry {
 	public static FetchModus ARRAY = new FetchModusArray();
 	public static FetchModus NULL = new FetchModusNull();
 	public static FetchModus MEMORY = new FetchModusMemory();
+	public static FetchModus TREE = new FetchModusTree(false);
 	public static FetchModus QUEUESTACK = new FetchModusQueuestack();
 	
 	public static FetchModus ARRAY_OF_QUEUE = new FetchModusArrayOfX(QUEUE);
@@ -30,6 +31,7 @@ public class ModusRegistry {
 		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return STACK;
 		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return ARRAY;
 		if (stack.getItem() == CaptchalogueMod.itemMemoryFetchModus) return MEMORY;
+		if (stack.getItem() == CaptchalogueMod.itemTreeFetchModus) return TREE;
 		if (stack.getItem() == CaptchalogueMod.itemQueuestackFetchModus) return QUEUESTACK;
 		if (stack.getItem() == CaptchalogueMod.itemQueueArrayFetchModus) return ARRAY_OF_QUEUE;
 		if (stack.getItem() == CaptchalogueMod.itemStackArrayFetchModus) return ARRAY_OF_STACK;
