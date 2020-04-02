@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
-import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;

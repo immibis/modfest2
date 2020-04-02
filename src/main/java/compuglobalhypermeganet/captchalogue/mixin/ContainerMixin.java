@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
 import compuglobalhypermeganet.captchalogue.FetchModusGuiState;
-import compuglobalhypermeganet.captchalogue.IContainerMixin;
-import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
-import compuglobalhypermeganet.captchalogue.ISlotMixin;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
 import net.minecraft.container.SlotActionType;
@@ -232,4 +232,12 @@ public abstract class ContainerMixin implements IContainerMixin {
 		}
 		return fetchModusState;
 	}
+	
+	/*@Shadow
+	public void addListener(ContainerListener listener) {}
+	
+	@Inject(at=@At("RETURN"), method="<init>*")
+	public void onAfterInit(CallbackInfo info) {
+		addListener(new )
+	}*/
 }

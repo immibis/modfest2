@@ -1,4 +1,4 @@
-package compuglobalhypermeganet.captchalogue;
+package compuglobalhypermeganet.captchalogue.mixin_support;
 
 import net.minecraft.container.Slot;
 import net.minecraft.container.SlotActionType;

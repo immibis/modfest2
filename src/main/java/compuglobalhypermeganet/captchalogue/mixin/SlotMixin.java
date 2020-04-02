@@ -14,10 +14,10 @@ import com.mojang.datafixers.util.Pair;
 
 import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModus;
-import compuglobalhypermeganet.captchalogue.IPlayerInventoryMixin;
-import compuglobalhypermeganet.captchalogue.ISlotMixin;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
+import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.texture.SpriteAtlasTexture;

@@ -1,6 +1,9 @@
 package compuglobalhypermeganet.captchalogue;
 
 import compuglobalhypermeganet.CaptchalogueMod;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerScreenMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
 import net.minecraft.container.SlotActionType;

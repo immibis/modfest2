@@ -2,6 +2,7 @@ package compuglobalhypermeganet.captchalogue;
 
 import java.awt.geom.Rectangle2D;
 
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerScreenMixin;
 import net.minecraft.container.Slot;
 
 public abstract class FetchModusGuiState {

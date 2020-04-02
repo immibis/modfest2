@@ -1,8 +1,8 @@
 package compuglobalhypermeganet.captchalogue.client;
 
 import compuglobalhypermeganet.captchalogue.FetchModusGuiState;
-import compuglobalhypermeganet.captchalogue.IContainerMixin;
-import compuglobalhypermeganet.captchalogue.IContainerScreenMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerScreenMixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.Element;

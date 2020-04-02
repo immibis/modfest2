@@ -8,6 +8,8 @@ import java.util.Random;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import compuglobalhypermeganet.CaptchalogueMod;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
