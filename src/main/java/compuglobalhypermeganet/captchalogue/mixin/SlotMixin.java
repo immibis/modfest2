@@ -13,10 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.mojang.datafixers.util.Pair;
 
 import compuglobalhypermeganet.CaptchalogueMod;
-import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
-import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.fabricmc.api.EnvType;
@@ -83,8 +81,7 @@ public class SlotMixin implements ISlotMixin {
 		if(captchalogue_isPlayerSlot()) {
 			if (invSlot == CaptchalogueMod.MODUS_SLOT)
 				return;
-			InventoryWrapper.PlayerInventorySkippingModusSlot inv = new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory);
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(inv, inv.fromUnderlyingSlotIndex(invSlot))) {
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(invSlot))) {
 				info.setReturnValue(false);
 			}
 		}
@@ -98,8 +95,7 @@ public class SlotMixin implements ISlotMixin {
 					info.setReturnValue(false);
 				return;
 			}
-			InventoryWrapper.PlayerInventorySkippingModusSlot inv = new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory);
-			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(inv, inv.fromUnderlyingSlotIndex(invSlot))) {
+			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(invSlot))) {
 				info.setReturnValue(false);
 			}
 		}
@@ -112,6 +108,8 @@ public class SlotMixin implements ISlotMixin {
 		}
 	}*/
 	
+	// TODO: remove unused hook
+	/*
 	@Inject(at = @At(value="HEAD"), method="setStack(Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	private void overrideSetStack(ItemStack stack, CallbackInfo info) {
 		if (captchalogue_isPlayerSlot()) {
@@ -122,24 +120,19 @@ public class SlotMixin implements ISlotMixin {
 				return; // When the server is sending us the inventory state, no silly business - just replicate exactly what the server says.
 
 			if (invSlot == CaptchalogueMod.MODUS_SLOT) {
-				IPlayerInventoryMixin m = (IPlayerInventoryMixin)inventory;
-				FetchModusType oldModus = m.getFetchModus();
-				((PlayerInventory)inventory).main.set(CaptchalogueMod.MODUS_SLOT, stack);
-				oldModus.deinitialize(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory));
-				m.getFetchModus().initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory));
-				info.cancel();
 				return;
 			}
 			if (((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, stack))
 				info.cancel();
 		}
-	}
+	}*/
 	
 	// In one case - where you click on a take-able, non-insertable slot and you are holding the same item - Minecraft will
 	// directly update the item stack count without calling setStack.
 	// markDirty is still called afterwards, so we hook that.
 	// TODO: maybe we should wait until markDirty to move ANY items to their fetchModus locations? That might also fix dragging? But other mods don't call markDirty...
-	@Inject(at = @At(value="HEAD"), method="markDirty()V")
+	// TODO: remove unused hook
+	/*@Inject(at = @At(value="HEAD"), method="markDirty()V")
 	private void onMarkDirty(CallbackInfo info) {
 		if (captchalogue_isPlayerSlot()) {
 			if (invSlot == CaptchalogueMod.MODUS_SLOT)
@@ -149,7 +142,7 @@ public class SlotMixin implements ISlotMixin {
 				((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, ItemStack.EMPTY);
 			}
 		}
-	}
+	}*/
 	
 	@Inject(at = @At(value="HEAD"), method="getBackgroundSprite()Lcom/mojang/datafixers/util/Pair;", cancellable=true)
 	@Environment(EnvType.CLIENT)

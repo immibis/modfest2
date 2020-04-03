@@ -41,14 +41,14 @@ public abstract class InventoryWrapper {
 		public void setInvStack(int slot, ItemStack stack) {
 			base.setInvStack(toUnderlyingSlotIndex(slot), stack);
 		}
-		public int fromUnderlyingSlotIndex(int slot) {
+		public static int fromUnderlyingSlotIndex(int slot) {
 			if(slot == CaptchalogueMod.MODUS_SLOT)
 				throw new IllegalArgumentException("slot is not mapped");
 			if(slot >= CaptchalogueMod.MODUS_SLOT)
 				slot--;
 			return slot;
 		}
-		public int toUnderlyingSlotIndex(int slot) {
+		public static int toUnderlyingSlotIndex(int slot) {
 			if(slot >= CaptchalogueMod.MODUS_SLOT)
 				slot++;
 			return slot;

@@ -1,8 +1,8 @@
 package compuglobalhypermeganet.captchalogue;
 
 import compuglobalhypermeganet.CaptchalogueMod;
-import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IContainerScreenMixin;
+import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
@@ -20,88 +20,6 @@ public class FetchModusTree extends FetchModusType {
 	private boolean isRootMode;
 	public FetchModusTree(boolean isRootMode) {
 		this.isRootMode = isRootMode;
-	}
-	
-	@Override public boolean hasCustomInsert() {return true;}
-	
-	@Override
-	public FetchModusGuiState createGuiState(Container cont, PlayerInventory inv) {
-		return new GuiState(cont, new InventoryWrapper.PlayerInventorySkippingModusSlot(inv), isRootMode);
-	}
-	
-	@Override
-	public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
-		
-		if(actionType != SlotActionType.PICKUP && actionType != SlotActionType.QUICK_MOVE) // normal click or shift-click on slot
-			return true;
-		
-		GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
-		
-		if (!plinv.getCursorStack().isEmpty()) {
-			if (clickData == 1) {
-				// right-click deposits one item
-				ItemStack depositStack = plinv.getCursorStack().copy();
-				depositStack.setCount(1);
-				insert(inv, depositStack);
-				if (depositStack.getCount() == 0)
-					plinv.getCursorStack().decrement(1);
-			} else {
-				insert(inv, plinv.getCursorStack());
-			}
-			return true;
-
-		} else {
-			if(!plinv.player.world.isClient())
-				state.tree.refreshNodeTree(); // tree on the server doesn't auto-update; update it before each action
-			if(!state.tree.canTakeFromSlot(isRootMode, slotIndex)) {
-				return true; // block the click
-			}
-			
-			Node node = state.tree.nodeBySlot[slotIndex];
-			
-			if(actionType == SlotActionType.PICKUP && (node.left != null || node.right != null)) {
-				// Only left-clicks allowed on nodes that have children. Treat a right-click as a left-click.
-				// The player must pick up all items in the stack at once, so that stuff underneath gets dropped.
-				// (Leaf nodes can be right-clicked, since that's equivalent to taking the whole stack and then putting some stuff back)
-				plinv.setCursorStack(inv.getInvStack(node.invSlot));
-				inv.setInvStack(node.invSlot, ItemStack.EMPTY);
-				return true;
-			}
-			
-			return false; // allow the click
-		}
-	}
-	
-	// TODO: remove unused hook
-	@Override
-	public void afterInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
-		//GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
-		//state.afterPossibleInventoryChange();
-		if(actionType == SlotActionType.QUICK_MOVE) // TODO: move this out of the specific modus code
-			afterPossibleInventoryChange(cont, inv);
-	}
-	
-	@Override
-	public void afterPossibleInventoryChange(Container cont, InventoryWrapper inv) {
-		if(cont != null) {
-			GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
-			state.maybeChanged = true;
-		} else {
-			InventoryTree tree = new InventoryTree(inv, isRootMode);
-			tree.dropEmptySlotChildren();
-			tree.rewriteUnderlyingInventory();
-		}
-	}
-	
-	@Override
-	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
-		// Insert into filled slots is allowed (must be the same type of item). Insert into empty slots is allowed. Tree modus has no insert restrictions.
-		// TODO: for queue/stack/etc we only wanted to enable one empty slot, for shift-clicking or something to work correctly? Do we also need that here?
-		return true;
-	}
-	@Override
-	public boolean canTakeFromSlot(InventoryWrapper inv, int slot) {
-		return true; // TODO: delegate to state - this callback needs to be able to get the state.
 	}
 	
 	public static class Node {
@@ -227,12 +145,25 @@ public class FetchModusTree extends FetchModusType {
 		private void rewriteStepDepthFirst(Node node, boolean isContinuation) {
 			if(node == null)
 				return;
-			int nodeSlotIndex = (node.left == null && node.right == null && !isContinuation && rewriteLeafPosition < rewriteLeafBreakPoint ? rewriteLeafPosition++ : rewriteNonLeafPosition++);
-			if(nodeSlotIndex > 35) {
-				// Too many non-leaf nodes? Use the leaf slots. TODO: make these hotbar-inaccessible
-				if(rewriteLeafPosition >= rewriteLeafBreakPoint)
-					throw new AssertionError("can't happen; no free slots");
-				nodeSlotIndex = rewriteLeafPosition++;
+			int nodeSlotIndex;
+			if (node.left == null && node.right == null && !isContinuation) {
+				// Leaf slot; prefer hotbar
+				if (rewriteLeafPosition < rewriteLeafBreakPoint)
+					nodeSlotIndex = rewriteLeafPosition++;
+				else {
+					nodeSlotIndex = rewriteNonLeafPosition++;
+					if(nodeSlotIndex >= 35) // XXX hardcoded maximum
+						throw new AssertionError("can't happen - no free slots");
+				}
+			} else {
+				// Non-leaf slot; prefer main inventory
+				if (rewriteNonLeafPosition < 35) // XXX hardcoded maximum
+					nodeSlotIndex = rewriteNonLeafPosition++;
+				else {
+					nodeSlotIndex = rewriteLeafPosition++;
+					if(nodeSlotIndex >= rewriteLeafBreakPoint)
+						throw new AssertionError("can't happen - no free slots");
+				}
 			}
 			inv.setInvStack(nodeSlotIndex, node.stack);
 			rewriteStepDepthFirst(node.continuation, true);
@@ -261,6 +192,8 @@ public class FetchModusTree extends FetchModusType {
 				inv.setInvStack(k, ItemStack.EMPTY);
 			for(int k = rewriteNonLeafPosition; k < inv.getNumSlots(); k++)
 				inv.setInvStack(k, ItemStack.EMPTY);
+			
+			refreshNodeTree(); // nodes have all moved positions; need to refresh tree with the correct node for each slot 
 		}
 		
 		private void replaceNodePositionInTree(Node n, Node with) {
@@ -342,21 +275,22 @@ public class FetchModusTree extends FetchModusType {
 		private float maxScrollPosition = 0;
 		
 		Container cont;
-		InventoryTree tree;
+		State invState;
 		
 		public GuiState(Container cont, InventoryWrapper inv, boolean isRootMode) {
 			this.cont = cont;
 			this.inv = inv;
-			this.tree = new InventoryTree(inv, isRootMode);
+			// TODO: could this possibly crash when changing moduses?
+			this.invState = (State)((IPlayerInventoryMixin)inv.getPlayer().inventory).getFetchModus();
 		}
 		
 		private void setupLayoutLinkedLists() {
-			for(Node n : tree.nodeBySlot) {
+			for(Node n : invState.tree.nodeBySlot) {
 				n.layoutNextLevel = null;
 				n.layoutSibling = null;
 			}
 			
-			Node currentLevelStart = tree.root;
+			Node currentLevelStart = invState.tree.root;
 			while(currentLevelStart != null) {
 				Node nextLevelStart = null;
 				Node nextLevelLast = null;
@@ -426,6 +360,7 @@ public class FetchModusTree extends FetchModusType {
 				maybeChanged = true;
 			}*/
 			
+			/*
 			maybeChanged |= ((IContainerMixin)cont).captchalogue_haveChanges();
 			
 			if(maybeChanged) {
@@ -441,6 +376,13 @@ public class FetchModusTree extends FetchModusType {
 				}
 				
 				maybeChanged = false;
+			}*/
+			
+			// TODO: don't recalculate every frame?
+			if (invState.tree.root != null) {
+				// 18 pixels on the left for the modus slot
+				// 18 pixels on the right to account for the slot size. 2 pixels on the left for borders.
+				calculateLayoutTopDown(invState.tree.root, (int)area.y+5, (float)area.x + 18 + 2, (float)(area.x + area.width - 18 - SCROLLBAR_WIDTH));
 			}
 			
 			int maxLayoutY = 0;
@@ -456,7 +398,7 @@ public class FetchModusTree extends FetchModusType {
 					if(slotIndex > CaptchalogueMod.MODUS_SLOT)
 						slotIndex--;
 					
-					Node n = tree.nodeBySlot[slotIndex];
+					Node n = invState.tree.nodeBySlot[slotIndex];
 					if(!n.isVisible) {
 						((ISlotMixin)s).captchalogue_setPosition(-1000, -1000); // XXX hack
 					} else {
@@ -514,7 +456,7 @@ public class FetchModusTree extends FetchModusType {
 					if(slotIndex > CaptchalogueMod.MODUS_SLOT)
 						slotIndex--;
 					
-					Node n = tree.nodeBySlot[slotIndex];
+					Node n = invState.tree.nodeBySlot[slotIndex];
 					if (n.isVisible) {
 						// draw slot background
 						/*d.appendSolidQuad(n.layoutX-1, n.layoutY-1, n.layoutX+17, n.layoutY+17, Drawer.COL_SLOT, Drawer.COL_SLOT, Drawer.COL_SLOT, 1.0f);
@@ -538,7 +480,7 @@ public class FetchModusTree extends FetchModusType {
 			}
 			
 			// Draw slot backgrounds
-			for(Node n : tree.nodeBySlot) {
+			for(Node n : invState.tree.nodeBySlot) {
 				if(n.isVisible) {
 					d.drawBorder(n.layoutX-1, n.layoutY-1-(int)scrollPosition, n.layoutX+17, n.layoutY+17-(int)scrollPosition);
 				}
@@ -568,7 +510,7 @@ public class FetchModusTree extends FetchModusType {
 					slotIndex--;
 				
 				int totalCount = 0;
-				for(Node node = tree.nodeBySlot[slotIndex]; node != null; node = node.continuation)
+				for(Node node = invState.tree.nodeBySlot[slotIndex]; node != null; node = node.continuation)
 					totalCount += inv.getInvStack(node.invSlot).getCount();
 				
 				// Only called on the client, so there's no risk of item duplication by doing this, only desyncs
@@ -608,7 +550,7 @@ public class FetchModusTree extends FetchModusType {
 					if(s.inventory instanceof PlayerInventory) {
 						int slot = ((ISlotMixin)s).captchalogue_getSlotNum();
 						if(slot >= 0 && slot < 36 && slot != CaptchalogueMod.MODUS_SLOT && s.getStack().isEmpty()) {
-							contScreen.captchalogue_onMouseClick(s, k, 0, SlotActionType.PICKUP);
+							contScreen.captchalogue_onMouseClick(s, k, button, SlotActionType.PICKUP);
 							return true;
 						}
 					}
@@ -632,51 +574,6 @@ public class FetchModusTree extends FetchModusType {
 	}
 	
 	@Override
-	public void initialize(InventoryWrapper inv) {
-		InventoryTree tree = new InventoryTree(inv, isRootMode);
-		tree.rewriteUnderlyingInventory();
-	}
-	
-	@Override public void insert(InventoryWrapper inv, ItemStack stack) {
-		if(stack.isEmpty())
-			return;
-		
-		// First, try to merge with any existing stacks. Inserting to existing stacks in a tree is allowed and doesn't affect the structure.
-		// Order doesn't really matter, since identical items are combined into the same visual tree node. The user can access all stacks of identical items, or none of them.
-		for(int k = 0; k < inv.getNumSlots(); k++) {
-			ItemStack stackInSlot = inv.getInvStack(k);
-			if(!stackInSlot.isEmpty() && Container.canStacksCombine(stack, stackInSlot)) {
-				int nt = Math.min(stack.getCount(), stackInSlot.getMaxCount() - stackInSlot.getCount());
-				if(nt > 0) {
-					stackInSlot.increment(nt);
-					stack.decrement(nt);
-					if(stack.isEmpty())
-						return;
-				}
-			}
-		}
-		
-		// Now we have some items that couldn't be merged.
-		
-		InventoryTree tree = new InventoryTree(inv, isRootMode);
-		Node node = tree.findUnusedNode();
-		if(node == null)
-			return; // inventory full; can't insert remaining items
-		
-		node.stack = stack.copy(); // This corrupts the tree structure; note the item ISN'T in the underlying inventory
-		stack.setCount(0);
-		
-		if(tree.root == null)
-			tree.root = node;
-		else
-			tree.insert(tree.root, node);
-		
-		// Note at this point the item is in our temporary tree structure, but not in the underlying inventory!
-		tree.rewriteUnderlyingInventory();
-		// now it is
-	}
-	
-	@Override
 	public boolean overridesGuiSlotVisualConnectivity() {
 		return true;
 	}
@@ -688,22 +585,180 @@ public class FetchModusTree extends FetchModusType {
 	}
 
 	@Override
-	public boolean affectsHotbarRendering() {
-		return true;
-	}
-	@Override
-	public boolean hidesHotbarSlot(int k) {
-		if(isRootMode)
-			return k != 0;
-		return false;
-	}
-	@Override
-	protected boolean blocksAccessToHotbarSlot_(int slot) {
-		return hidesHotbarSlot(slot);
-	}
-
-	@Override
 	public boolean forceRightClickOneItem() {
 		return false;
+	}
+	
+	@Override
+	public FetchModusState createFetchModusState(InventoryWrapper inv) {
+		return new State(inv, isRootMode);
+	}
+	
+	public static class State extends FetchModusState {
+		private InventoryWrapper inv;
+		private boolean isRootMode;
+		private InventoryTree tree;
+		public State(InventoryWrapper inv, boolean isRootMode) {
+			this.inv = inv;
+			this.isRootMode = isRootMode;
+			tree = new InventoryTree(inv, isRootMode);
+		}
+		
+		@Override public void initialize() {
+			tree.refreshNodeTree();
+			tree.rewriteUnderlyingInventory();
+		}
+		
+		@Override public boolean hasCustomInsert() {return true;}
+		@Override public void insert(ItemStack stack) {
+			if(stack.isEmpty())
+				return;
+			
+			// First, try to merge with any existing stacks. Inserting to existing stacks in a tree is allowed and doesn't affect the structure.
+			// Order doesn't really matter, since identical items are combined into the same visual tree node. The user can access all stacks of identical items, or none of them.
+			for(int k = 0; k < inv.getNumSlots(); k++) {
+				ItemStack stackInSlot = inv.getInvStack(k);
+				if(!stackInSlot.isEmpty() && Container.canStacksCombine(stack, stackInSlot)) {
+					int nt = Math.min(stack.getCount(), stackInSlot.getMaxCount() - stackInSlot.getCount());
+					if(nt > 0) {
+						stackInSlot.increment(nt);
+						stack.decrement(nt);
+						if(stack.isEmpty())
+							return;
+					}
+				}
+			}
+			
+			// Now we have some items that couldn't be merged.
+			
+			Node node = tree.findUnusedNode();
+			if(node == null)
+				return; // inventory full; can't insert remaining items
+			
+			node.stack = stack.copy(); // This corrupts the tree structure; note the item ISN'T in the underlying inventory
+			stack.setCount(0);
+			
+			if(tree.root == null)
+				tree.root = node;
+			else
+				tree.insert(tree.root, node);
+			
+			// Note at this point the item is in our tree structure, but not in the underlying inventory!
+			tree.rewriteUnderlyingInventory();
+			// now it is
+		}
+		
+		@Override
+		public boolean canInsertToSlot(int slot) {
+			// Insert into filled slots is allowed (must be the same type of item). Insert into empty slots is allowed. Tree modus has no insert restrictions.
+			// TODO: for queue/stack/etc we only wanted to enable one empty slot, for shift-clicking or something to work correctly? Do we also need that here?
+			return true;
+		}
+		@Override
+		public boolean canTakeFromSlot(int slot) {
+			Node node = tree.nodeBySlot[slot];
+			if(isRootMode)
+				return node.isVisible && node == tree.root;
+			else
+				return node.isVisible && node.left == null && node.right == null; // continuation doesn't have to be null
+		}
+
+		@Override
+		public boolean affectsHotbarRendering() {
+			return true;
+		}
+		@Override
+		public ItemStack modifyHotbarRenderItem(int slot, ItemStack stack) {
+			if (blocksAccessToHotbarSlot_(slot) || stack.isEmpty())
+				return ItemStack.EMPTY;
+			
+			// Display the total amount of available items in all continuation slots
+			Node node = tree.nodeBySlot[slot];
+			while(node.parent != null && node == node.parent.continuation)
+				node = node.parent;
+			if(node.continuation == null)
+				return stack; // only one slot, no chained continuations, so the stack is unchanged
+			
+			int total = 0;
+			while(node != null) {
+				total += inv.getInvStack(node.invSlot).getCount();
+				node = node.continuation;
+			}
+			stack = stack.copy();
+			stack.setCount(total);
+			return stack;
+		}
+		@Override
+		protected boolean blocksAccessToHotbarSlot_(int slot) {
+			if(isRootMode)
+				return slot != 0;
+			if(inv.getInvStack(slot).isEmpty())
+				return false; // no reason to block empty slots if they're available.
+			// Only unblock leaf slots and continuations thereof.
+			// Non-leaf nodes might be placed in the hotbar if there isn't enough space in the main inventory.
+			Node node = tree.nodeBySlot[slot];
+			while(node.parent != null && node == node.parent.continuation)
+				node = node.parent;
+			return (node.left != null || node.right != null);
+		}
+		
+		@Override
+		public void afterPossibleInventoryChange(long changedSlotMask, boolean serverSync) {
+			if (!serverSync)
+				tree.dropEmptySlotChildren();
+			System.out.println("TreeModus afterPossibleInvenotryCharge "+changedSlotMask+" "+serverSync);
+			tree.refreshNodeTree();
+			if (!serverSync)
+				tree.rewriteUnderlyingInventory();
+		}
+		
+		@Override
+		public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, int slotIndex, SlotActionType actionType, int clickData) {
+			
+			if(actionType != SlotActionType.PICKUP // normal click
+			 && actionType != SlotActionType.QUICK_MOVE // shift-click
+			 && actionType != SlotActionType.THROW) // press Q
+				return true;
+			
+			if (!plinv.getCursorStack().isEmpty() && actionType == SlotActionType.PICKUP) {
+				if (clickData == 1) {
+					// right-click deposits one item
+					ItemStack depositStack = plinv.getCursorStack().copy();
+					depositStack.setCount(1);
+					insert(depositStack);
+					if (depositStack.getCount() == 0)
+						plinv.getCursorStack().decrement(1);
+				} else {
+					insert(plinv.getCursorStack());
+				}
+				return true;
+
+			} else {
+				if(!plinv.player.world.isClient())
+					tree.refreshNodeTree(); // tree on the server doesn't auto-update; update it before each action
+				if(!tree.canTakeFromSlot(isRootMode, slotIndex)) {
+					return true; // block the click
+				}
+				
+				Node node = tree.nodeBySlot[slotIndex];
+				
+				if(actionType == SlotActionType.PICKUP && (node.left != null || node.right != null)) {
+					// Only left-clicks allowed on nodes that have children. Treat a right-click as a left-click.
+					// The player must pick up all items in the stack at once, so that stuff underneath gets dropped.
+					// (Leaf nodes can be right-clicked, since that's equivalent to taking the whole stack and then putting some stuff back)
+					plinv.setCursorStack(inv.getInvStack(node.invSlot));
+					inv.setInvStack(node.invSlot, ItemStack.EMPTY);
+					return true;
+				}
+				
+				return false; // allow the click
+			}
+		}
+		
+		@Override
+		public FetchModusGuiState createGuiState(Container cont) {
+			return new GuiState(cont, inv, isRootMode);
+		}
+		
 	}
 }

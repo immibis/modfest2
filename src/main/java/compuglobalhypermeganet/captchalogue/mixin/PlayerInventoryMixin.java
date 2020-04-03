@@ -16,9 +16,7 @@ import compuglobalhypermeganet.captchalogue.InventoryUtils;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
 import compuglobalhypermeganet.captchalogue.mixin_support.AfterInventoryChangedRunnable;
-import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
@@ -31,43 +29,86 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	@Shadow public @Final PlayerEntity player;
 	@Shadow public int selectedSlot;
 	
-	@Unique public FetchModusState fetchModusState = FetchModusState.NULL_STATE;
-	
-	// TODO: For Tree modus it would be good, and probably more stable, to have the tree stored in the PlayerInventory instead of recreating it on demand.
-	// This means we should create an instance of something per inventory, and tell it when setInvStack happens, and use it for insert.
-	// Probably also switch the other moduses over to this system too.
+	@Unique public FetchModusState fetchModus;
 	
 	@Override
-	public FetchModusType getFetchModus() {
-		return ModusRegistry.getModus((PlayerInventory)(Object)this);
-	}
-	
-	@Inject(at = @At("HEAD"), method="setInvStack(ILnet/minecraft/item/ItemStack;)V")
-	public void notifyStackChange(int slot, ItemStack stack, CallbackInfo info) {
-		if(player.container != null && slot >= 0 && slot < 36)
-			((IContainerMixin)player.container).captchalogue_onPlayerInventoryStackChanging(slot, stack);
+	public FetchModusState getFetchModus() {
+		if(fetchModus == null)
+			throw new IllegalStateException("object still being constructed - shouldn't get here");
+		return fetchModus;
 	}
 	
 	@Unique public long captchalogue_changedSlots;
+	private static final long SERVER_CHANGED_MODUS_SLOT_FLAG = 0x8000000000000000L;
+	private static final long SERVER_CHANGED_SLOTS_FLAG = 0x4000000000000000L;
 	
-	@Inject(at = @At("RETURN"), method="setInvStack(ILnet/minecraft/item/ItemStack;)V")
-	public void afterStackChange(int slot, ItemStack stack, CallbackInfo info) {
+	@Unique
+	public void captchalogue_afterStackChange(int slot) {
 		if(slot >= 0 && slot < 36) { // including modus slot
+
+			// all cases set some flag which should lead to captchalogue_afterInventoryChanged being called.
 			if(captchalogue_changedSlots == 0)
 				CaptchalogueMod.executeLater(player.world, new AfterInventoryChangedRunnable(this));
-			captchalogue_changedSlots |= 1L << slot;
+
+			// Sync events from the server (or client in creative mode) don't trigger update events as this could cause a desync from the server.
+			if(!FetchModusType.isProcessingPacket.get().booleanValue()) {
+				captchalogue_changedSlots |= 1L << slot;
+			
+			} else {
+				if (slot == CaptchalogueMod.MODUS_SLOT) {
+					// but if the server tells us we have a different modus, then we still need to have a valid modus object
+					captchalogue_changedSlots |= SERVER_CHANGED_MODUS_SLOT_FLAG;
+				} else {
+					// We still need to notify the modus to rebuild any caches; e.g. tree modus might need to update tree layout.
+					captchalogue_changedSlots |= SERVER_CHANGED_SLOTS_FLAG;
+				}
+			}
 		}
 	}
 	
+	@Inject(at = @At("RETURN"), method="setInvStack(ILnet/minecraft/item/ItemStack;)V")
+	public void afterSetStack(int slot, ItemStack stack, CallbackInfo info) {
+		captchalogue_afterStackChange(slot);
+	}
+	
+	@Inject(at = @At("RETURN"), method="takeInvStack(II)Lnet/minecraft/item/ItemStack;")
+	public void afterTakeStack(int slot, int amount, CallbackInfoReturnable<ItemStack> info) {
+		// when you press Q to drop an item, it calls takeInvStack, and doesn't call setInvStack
+		captchalogue_afterStackChange(slot);
+	}
+		
+	
 	@Override
 	public void captchalogue_afterInventoryChanged() {
-		if((captchalogue_changedSlots & (1L << CaptchalogueMod.MODUS_SLOT)) != 0) {
-			// Fetch modus has changed!
-			//fetchModusState.deinitialize();
-			//fetchModusState = getFetchModus().createFetchModusState(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this));
-			//fetchModusState.initialize();
+		if ((captchalogue_changedSlots & SERVER_CHANGED_MODUS_SLOT_FLAG) != 0) {
+			fetchModus = ModusRegistry.getModus((PlayerInventory)(Object)this).createFetchModusState(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this));
+			captchalogue_changedSlots |= SERVER_CHANGED_SLOTS_FLAG;
 		}
-		captchalogue_changedSlots = 0; // Any inventory changes made in this function do NOT re-trigger it.
+		
+		if ((captchalogue_changedSlots & SERVER_CHANGED_SLOTS_FLAG) != 0) {
+			// TODO: track which slots were changed by the server.
+			fetchModus.afterPossibleInventoryChange(-1L, true);
+			captchalogue_changedSlots &= ~SERVER_CHANGED_SLOTS_FLAG;
+		}
+		
+		if (captchalogue_changedSlots != 0) {
+			if((captchalogue_changedSlots & (1L << CaptchalogueMod.MODUS_SLOT)) != 0) {
+				// Fetch modus has changed!
+				if(fetchModus != null) // should only be null during construction
+					fetchModus.deinitialize();
+				fetchModus = ModusRegistry.getModus((PlayerInventory)(Object)this).createFetchModusState(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this));
+				fetchModus.initialize();
+			} else {
+				if(fetchModus != null) { // should never be null
+					long changedSlots = captchalogue_changedSlots;
+					long belowModusMask = (1L << CaptchalogueMod.MODUS_SLOT) - 1;
+					long aboveModusMask = (~belowModusMask) << 1;
+					changedSlots = (changedSlots & belowModusMask) | ((changedSlots & aboveModusMask) >> 1);
+					fetchModus.afterPossibleInventoryChange(changedSlots, false);
+				}
+			}
+			captchalogue_changedSlots = 0; // Any inventory changes made within this function do NOT re-trigger it.
+		}
 	}
 	
 	@Unique
@@ -90,13 +131,13 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			return;
 		}
 		
-		FetchModusType modus = getFetchModus();
+		FetchModusState modus = getFetchModus();
 		if (modus.hasCustomInsert()) {
 			// This returns true if any items were successfully inserted.
 			// modus.insert updates the stack's count.
 			// Slot number is ignored!
 			int previousCount = stack.getCount();
-			modus.insert(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), stack);
+			modus.insert(stack);
 			info.setReturnValue(stack.getCount() < previousCount);
 		}
 	}
@@ -113,9 +154,9 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 				return;
 			}
 			
-			FetchModusType modus = getFetchModus();
+			FetchModusState modus = getFetchModus();
 			if (modus.hasCustomInsert()) {
-				modus.insert(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), stack);
+				modus.insert(stack);
 				if (stack.getCount() == 0) {
 					info.cancel();
 				}
@@ -124,19 +165,25 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 		}
 	}
 	
+	/*
+	// TODO: redundant now that we can't select blocked slots?
 	@Inject(at = @At("HEAD"), method="isUsingEffectiveTool(Lnet/minecraft/block/BlockState;)Z", cancellable=true)
 	public void enforceModus_isUsingEffectiveTool(CallbackInfoReturnable<Boolean> info) {
-		// If the modus won't allow it, pretend we are not using the item in this slot. 
-		if (!getFetchModus().canTakeFromSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), selectedSlot))
+		// If the modus won't allow it, pretend we are not using the item in this slot.
+		// TODO: if modus slot was any other hotbar slot, we need to remap the slot number here
+		if (selectedSlot != CaptchalogueMod.MODUS_SLOT && fetchModus != null && !fetchModus.canTakeFromSlot(selectedSlot))
 			info.setReturnValue(Boolean.FALSE);
 	}
 	
+	// TODO: redundant now that we can't select blocked slots?
 	@Inject(at = @At("HEAD"), method="getBlockBreakingSpeed(Lnet/minecraft/block/BlockState;)F", cancellable=true)
 	public void enforceModus_getBlockBreakingSpeed(BlockState block, CallbackInfoReturnable<Float> info) {
-		// If the modus won't allow it, pretend we are not using the item in this slot. 
-		if (!getFetchModus().canTakeFromSlot(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this), selectedSlot))
+		// If the modus won't allow it, pretend we are not using the item in this slot.
+		// TODO: if modus slot was any other hotbar slot, we need to remap the slot number here
+		if (selectedSlot != CaptchalogueMod.MODUS_SLOT && fetchModus != null && !fetchModus.canTakeFromSlot(selectedSlot))
 			info.setReturnValue(Float.valueOf(ItemStack.EMPTY.getMiningSpeed(block)));
 	}
+	*/
 	
 	
 	
@@ -150,7 +197,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	// Last resort to detect wrong hotbar slot changes.
 	@Inject(at = @At("HEAD"), method="updateItems()V")
 	public void beforeUpdateItems(CallbackInfo info) {
-		FetchModusType modus = getFetchModus();
+		FetchModusState modus = getFetchModus();
 		InventoryUtils.ensureSelectedSlotIsUnblocked(modus, (PlayerInventory)(Object)this, lastSelectedSlot, false);
 		lastSelectedSlot = selectedSlot;
 	}
@@ -159,6 +206,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	
 	@Inject(at = @At("RETURN"), method="<init>(Lnet/minecraft/entity/player/PlayerEntity;)V")
 	public void initDefaultModus(PlayerEntity player, CallbackInfo info) {
+		fetchModus = ModusRegistry.NULL.createFetchModusState(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this));
 		if (!player.world.isClient()) {
 			PlayerInventory inv = (PlayerInventory)(Object)this;
 			Item modusType = CaptchalogueMod.DEFAULT_MODUSES.get(player.world.random.nextInt(CaptchalogueMod.DEFAULT_MODUSES.size()));
@@ -166,5 +214,12 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 				inv.setInvStack(CaptchalogueMod.MODUS_SLOT, new ItemStack(modusType));
 			}
 		}
+	}
+	
+	@Inject(at = @At("RETURN"), method="deserialize(Lnet/minecraft/nbt/ListTag;)V")
+	public void afterDeserialize(CallbackInfo info) {
+		// don't deinitialize previous modus; inventory contents were overwritten
+		fetchModus = ModusRegistry.getModus((PlayerInventory)(Object)this).createFetchModusState(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)(Object)this));
+		fetchModus.initialize();
 	}
 }

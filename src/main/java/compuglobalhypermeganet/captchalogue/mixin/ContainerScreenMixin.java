@@ -14,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.CaptchalogueMod;
-import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.FetchModusGuiState;
+import compuglobalhypermeganet.captchalogue.FetchModusState;
+import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
 import compuglobalhypermeganet.captchalogue.client.AdditionalContainerScreenElement;
@@ -394,10 +395,10 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 			if(slotNum < 0 || slotNum >= 36)
 				return;
 			
-			if (modus.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
+			FetchModusGuiState gs = getFetchModusGuiState();
+			if (gs.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
 				info.cancel();
 			} else {
-				FetchModusGuiState gs = getFetchModusGuiState();
 				DrawerImpl d = captchalogue_getDrawerImpl();
 				if(slot.inventory instanceof PlayerInventory)
 					gs.beforeDrawSlot(slot, d);
@@ -491,16 +492,16 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 				if(slotIndex == CaptchalogueMod.MODUS_SLOT || slotIndex < 0 || slotIndex >= 36)
 					return true; // no override
 				
-				FetchModusType modus = ((IPlayerInventoryMixin)inv).getFetchModus();
+				FetchModusState modus = ((IPlayerInventoryMixin)inv).getFetchModus();
 				
 				boolean holdingItem = !inv.getCursorStack().isEmpty();
 				
-				InventoryWrapper.PlayerInventorySkippingModusSlot wrapper = new InventoryWrapper.PlayerInventorySkippingModusSlot(inv);
-				if ((!holdingItem && !modus.canTakeFromSlot(wrapper, wrapper.fromUnderlyingSlotIndex(slotIndex))) || (holdingItem && !modus.canInsertToSlot(wrapper, wrapper.fromUnderlyingSlotIndex(slotIndex))) ) {
+				if ((!holdingItem && !modus.canTakeFromSlot(InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(slotIndex))) || (holdingItem && !modus.canInsertToSlot(InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(slotIndex))) ) {
 					// Set focusedSlot (normally done if this function returns true), but return false to skip the highlight rendering
 					
+					FetchModusGuiState guistate = ((IContainerMixin)receiver.getContainer()).getFetchModusGuiState();
 					// ... unless the modus blocks it (like Memory modus for unrevealed slots!)
-					focusedSlot = modus.overrideFocusedSlot((ContainerScreen<?>)(Object)this, inv, slotIndex, slot);
+					focusedSlot = guistate.overrideFocusedSlot((ContainerScreen<?>)(Object)this, inv, slotIndex, slot);
 					return false;
 				}
 			}

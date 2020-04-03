@@ -44,7 +44,7 @@ public class InventoryUtils {
 		}
 	}
 
-	public static void ensureSelectedSlotIsUnblocked(FetchModusType modus, PlayerInventory inv, int lastSelectedSlot, boolean isScroll) {
+	public static void ensureSelectedSlotIsUnblocked(FetchModusState modus, PlayerInventory inv, int lastSelectedSlot, boolean isScroll) {
 		if (modus.blocksAccessToHotbarSlot(inv.selectedSlot)) {
 			if (isScroll) {
 				if (inv.selectedSlot == (lastSelectedSlot + 8) % 9) {
