@@ -6,7 +6,7 @@ import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
-public class FetchModusQueue extends FetchModus {
+public class FetchModusQueue extends FetchModusType {
 	@Override
 	public void initialize(InventoryWrapper inventory) {
 		compactItemsToLowerIndices(inventory, 0);

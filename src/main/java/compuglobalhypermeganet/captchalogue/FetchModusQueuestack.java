@@ -6,7 +6,7 @@ import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
-public class FetchModusQueuestack extends FetchModus {
+public class FetchModusQueuestack extends FetchModusType {
 	// Sorts items in a linear order like the queue or stack, but both the first and last inserted items are usable.
 	// It sorts in queue order (new items are appended at the end, not the start).
 	// The last inserted item always goes in slot 7, so that it's accessible on the hotbar.

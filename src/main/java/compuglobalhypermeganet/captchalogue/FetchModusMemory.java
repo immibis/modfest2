@@ -28,7 +28,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
 
-public class FetchModusMemory extends FetchModus {
+public class FetchModusMemory extends FetchModusType {
 	@Override public boolean hasCustomInsert() {return false;}
 	@Override public void insert(InventoryWrapper inv, ItemStack stack) {throw new AssertionError("unreachable");}
 	
@@ -57,9 +57,9 @@ public class FetchModusMemory extends FetchModus {
 		// Client generates random seed; sends it on every click (in ClickWindowC2SPacket); server copies it.
 		// If the client has changed the random seed then the server re-randomizes its inventory mapping based on the new seed.
 		if (inv.getPlayer().world.isClient()) {
-			FetchModus.currentPacketFetchModusState.set(state.randomSeed);
-		} else if (FetchModus.currentPacketFetchModusState.get() != state.randomSeed) {
-			state.setup(plinv, FetchModus.currentPacketFetchModusState.get());
+			FetchModusType.currentPacketFetchModusState.set(state.randomSeed);
+		} else if (FetchModusType.currentPacketFetchModusState.get() != state.randomSeed) {
+			state.setup(plinv, FetchModusType.currentPacketFetchModusState.get());
 		}
 		
 		if (!plinv.getCursorStack().isEmpty()) {

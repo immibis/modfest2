@@ -1,7 +1,10 @@
 package compuglobalhypermeganet.captchalogue.mixin_support;
 
-import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusType;
 
 public interface IPlayerInventoryMixin {
-	public FetchModus getFetchModus();
+	public FetchModusType getFetchModus();
+	
+	// Called asynchronously from the main loop after the inventory changes
+	public void captchalogue_afterInventoryChanged();
 }

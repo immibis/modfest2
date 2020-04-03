@@ -5,7 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
-public class FetchModusNull extends FetchModus {
+public class FetchModusNull extends FetchModusType {
 	@Override
 	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
 		return false;

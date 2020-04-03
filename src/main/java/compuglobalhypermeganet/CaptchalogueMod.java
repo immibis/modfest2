@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import net.fabricmc.api.ModInitializer;
@@ -23,8 +24,11 @@ import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.ServerTask;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.World;
 
 public class CaptchalogueMod implements ModInitializer {
 	
@@ -220,5 +224,20 @@ public class CaptchalogueMod implements ModInitializer {
 			if(a[k] != b[k])
 				return Long.compare(a[k], b[k]);
 		return Integer.compare(a.length, b.length);
+	}
+	
+	// Overwritten in client mod initializer
+	public static BiConsumer<World, Runnable> executeLaterOnClientWorld = (World w, Runnable r) -> {throw new RuntimeException("client world on a dedicated server?! "+w);};
+
+	public static void executeLater(World world, Runnable runnable) {
+		MinecraftServer server = world.getServer();
+		// send(), not execute(). execute() will execute the task immediately if possible, but we MUST queue it for later.
+		if(server != null)
+			server.send(new ServerTask(server.getTicks(), runnable));
+		else {
+			if(!world.isClient())
+				throw new RuntimeException("World isn't server world or client world?! "+world);
+			executeLaterOnClientWorld.accept(world, runnable);
+		}
 	}
 }

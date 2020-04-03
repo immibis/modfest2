@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.mixin_support.IClickWindowC2SPacketMixin;
 import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
 import net.minecraft.util.PacketByteBuf;
@@ -19,7 +19,7 @@ public class ClickWindowC2SPacketMixin implements IClickWindowC2SPacketMixin {
 	
 	@Inject(at=@At("RETURN"), method="<init>*")
 	public void onInit(CallbackInfo info) {
-		fetchModusState = FetchModus.currentPacketFetchModusState.get();
+		fetchModusState = FetchModusType.currentPacketFetchModusState.get();
 	}
 	
 	@Override

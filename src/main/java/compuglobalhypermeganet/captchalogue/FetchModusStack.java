@@ -6,7 +6,7 @@ import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
-public class FetchModusStack extends FetchModus {
+public class FetchModusStack extends FetchModusType {
 	
 	@Override
 	public void initialize(InventoryWrapper inventory) {

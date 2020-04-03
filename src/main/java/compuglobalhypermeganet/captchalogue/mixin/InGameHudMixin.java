@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import compuglobalhypermeganet.CaptchalogueMod;
-import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
@@ -16,7 +16,7 @@ import net.minecraft.item.ItemStack;
 public class InGameHudMixin {
 	@Inject(at = @At("HEAD"), method="renderHotbarItem(IIFLnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	public void overrideRenderHotbarItem(int x, int y, float partialTicks, PlayerEntity player, ItemStack stack, CallbackInfo info) {
-		FetchModus modus = ((IPlayerInventoryMixin)player.inventory).getFetchModus();
+		FetchModusType modus = ((IPlayerInventoryMixin)player.inventory).getFetchModus();
 		if (modus.affectsHotbarRendering() && !stack.isEmpty()) {
 			// We have to know which hotbar slot we're being passed.
 			// We can't do this for empty stacks, since they're all the same.

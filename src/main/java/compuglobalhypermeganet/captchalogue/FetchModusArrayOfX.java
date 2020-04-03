@@ -6,7 +6,7 @@ import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
-public class FetchModusArrayOfX extends FetchModus {
+public class FetchModusArrayOfX extends FetchModusType {
 	
 	private static final int modusSlotVisualIndex = InventoryUtils.playerInventoryLogicalToVisualIndex(CaptchalogueMod.MODUS_SLOT);
 	private static final int[][] slotsAvailablePerSubModus = new int[8][4];
@@ -26,8 +26,8 @@ public class FetchModusArrayOfX extends FetchModus {
 		unusedSlots = new int[] {16, 25, 34};
 	}
 	
-	public FetchModus baseModus;
-	public FetchModusArrayOfX(FetchModus baseModus) {
+	public FetchModusType baseModus;
+	public FetchModusArrayOfX(FetchModusType baseModus) {
 		this.baseModus = baseModus;
 	}
 	

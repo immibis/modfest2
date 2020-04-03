@@ -15,7 +15,7 @@ import net.minecraft.item.ItemStack;
  * The tree is constructed on demand.
  * In leaf mode, slots 0-7 come last, so that the first 8 leaves correspond to the hotbar. In root mode, they come in numeric order.
  */
-public class FetchModusTree extends FetchModus {
+public class FetchModusTree extends FetchModusType {
 	
 	private boolean isRootMode;
 	public FetchModusTree(boolean isRootMode) {
@@ -23,8 +23,6 @@ public class FetchModusTree extends FetchModus {
 	}
 	
 	@Override public boolean hasCustomInsert() {return true;}
-	
-	// TODO: clicking anywhere in the tree pane with an item should call insert
 	
 	@Override
 	public FetchModusGuiState createGuiState(Container cont, PlayerInventory inv) {
@@ -74,19 +72,24 @@ public class FetchModusTree extends FetchModus {
 		}
 	}
 	
+	// TODO: remove unused hook
 	@Override
 	public void afterInventoryClick(Container cont, PlayerInventory plinv, InventoryWrapper inv, int slotIndex, SlotActionType actionType, int clickData) {
-		GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
-		state.afterPossibleInventoryChange();
+		//GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
+		//state.afterPossibleInventoryChange();
+		if(actionType == SlotActionType.QUICK_MOVE) // TODO: move this out of the specific modus code
+			afterPossibleInventoryChange(cont, inv);
 	}
 	
 	@Override
 	public void afterPossibleInventoryChange(Container cont, InventoryWrapper inv) {
 		if(cont != null) {
 			GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
-			state.afterPossibleInventoryChange();
+			state.maybeChanged = true;
 		} else {
-			// TODO!
+			InventoryTree tree = new InventoryTree(inv, isRootMode);
+			tree.dropEmptySlotChildren();
+			tree.rewriteUnderlyingInventory();
 		}
 	}
 	
@@ -221,10 +224,10 @@ public class FetchModusTree extends FetchModus {
 		private int rewriteLeafPosition;
 		private int rewriteLeafBreakPoint;
 		private int rewriteNonLeafPosition;
-		private void rewriteStepDepthFirst(Node node) {
+		private void rewriteStepDepthFirst(Node node, boolean isContinuation) {
 			if(node == null)
 				return;
-			int nodeSlotIndex = (node.left == null && node.right == null && rewriteLeafPosition < rewriteLeafBreakPoint ? rewriteLeafPosition++ : rewriteNonLeafPosition++);
+			int nodeSlotIndex = (node.left == null && node.right == null && !isContinuation && rewriteLeafPosition < rewriteLeafBreakPoint ? rewriteLeafPosition++ : rewriteNonLeafPosition++);
 			if(nodeSlotIndex > 35) {
 				// Too many non-leaf nodes? Use the leaf slots. TODO: make these hotbar-inaccessible
 				if(rewriteLeafPosition >= rewriteLeafBreakPoint)
@@ -232,9 +235,9 @@ public class FetchModusTree extends FetchModus {
 				nodeSlotIndex = rewriteLeafPosition++;
 			}
 			inv.setInvStack(nodeSlotIndex, node.stack);
-			rewriteStepDepthFirst(node.continuation);
-			rewriteStepDepthFirst(node.left);
-			rewriteStepDepthFirst(node.right);
+			rewriteStepDepthFirst(node.continuation, true);
+			rewriteStepDepthFirst(node.left, false);
+			rewriteStepDepthFirst(node.right, false);
 		}
 		public void rewriteUnderlyingInventory() {
 			if(isRootMode) {
@@ -251,7 +254,7 @@ public class FetchModusTree extends FetchModus {
 				rewriteNonLeafPosition = 8;
 			}
 			
-			rewriteStepDepthFirst(root);
+			rewriteStepDepthFirst(root, false);
 			
 			// Clear unused slots
 			for(int k = rewriteLeafPosition; k < rewriteLeafBreakPoint; k++)
@@ -341,12 +344,6 @@ public class FetchModusTree extends FetchModus {
 		Container cont;
 		InventoryTree tree;
 		
-		boolean maybeChanged;
-		
-		public void afterPossibleInventoryChange() {
-			maybeChanged = true;
-		}
-		
 		public GuiState(Container cont, InventoryWrapper inv, boolean isRootMode) {
 			this.cont = cont;
 			this.inv = inv;
@@ -418,19 +415,23 @@ public class FetchModusTree extends FetchModus {
 		} // */
 		
 		IContainerScreenMixin contScreen;
-		int forceRecalcFrames = 0;
+		boolean maybeChanged = false;
 		@Override
 		public void onBeforeDraw(IContainerScreenMixin contScreen) {
 			this.contScreen = contScreen; // XXX hacky place to initialize this!
 			
 			// TODO: don't constantly recalculate layout
-			if(++forceRecalcFrames >= 120) {
+			/*if(++forceRecalcFrames >= 120) {
 				forceRecalcFrames = 0;
 				maybeChanged = true;
-			}
+			}*/
+			
+			maybeChanged |= ((IContainerMixin)cont).captchalogue_haveChanges();
 			
 			if(maybeChanged) {
-				tree.dropEmptySlotChildren();
+				System.out.println("Tree modus refresh");
+				if(!inv.getPlayer().world.isClient())
+					tree.dropEmptySlotChildren();
 				tree.refreshNodeTree();
 				
 				if (tree.root != null) {
@@ -469,13 +470,33 @@ public class FetchModusTree extends FetchModus {
 			scrollPosition = Math.min(scrollPosition, maxScrollPosition);
 		}
 		
+		// TODO: shift-clicking on a non-inventory slot doesn't update the tree structure.
+		
 		private void appendLine(Drawer d, Node from, float fx1, float fx2, Node to, float tx1, float tx2) {
 			float COL = Drawer.COL_LEFT_TOP;
-			int sp = (int)scrollPosition;
-			d.appendVertex(from.layoutX+fx1, from.layoutY+17-sp, COL, COL, COL, 1.0f);
-			d.appendVertex(from.layoutX+fx2, from.layoutY+17-sp, COL, COL, COL, 1.0f);
-			d.appendVertex(  to.layoutX+tx2,   to.layoutY- 1-sp, COL, COL, COL, 1.0f);
-			d.appendVertex(  to.layoutX+tx1,   to.layoutY- 1-sp, COL, COL, COL, 1.0f);
+			
+			//float sp = scrollPosition;
+			//d.appendVertex(from.layoutX+fx1, from.layoutY+17-sp, COL, COL, COL, 1.0f);
+			//d.appendVertex(from.layoutX+fx2, from.layoutY+17-sp, COL, COL, COL, 1.0f);
+			//d.appendVertex(  to.layoutX+tx2,   to.layoutY- 1-sp, COL, COL, COL, 1.0f);
+			//d.appendVertex(  to.layoutX+tx1,   to.layoutY- 1-sp, COL, COL, COL, 1.0f);
+
+			float x1 = from.layoutX+8;
+			float x2 = to.layoutX+8;
+			// scrollPosition converted to int for consistency with the slot positions. Otherwise the slots scroll more coarsely than the connector lines.
+			float y1 = from.layoutY+8-(int)scrollPosition;
+			float y2 = to.layoutY+8-(int)scrollPosition;
+			
+			float len = (float)Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+			
+			// normal vector to add thickness to the line
+			float nx = (y2 - y1)/len;
+			float ny = (x1 - x2)/len;
+			
+			d.appendVertex(x1+nx, y1+ny, COL, COL, COL, 1.0f);
+			d.appendVertex(x1-nx, y1-ny, COL, COL, COL, 1.0f);
+			d.appendVertex(x2-nx, y2-ny, COL, COL, COL, 1.0f);
+			d.appendVertex(x2+nx, y2+ny, COL, COL, COL, 1.0f);
 		}
 		
 		@Override
@@ -484,6 +505,7 @@ public class FetchModusTree extends FetchModus {
 			d.restrictRendering((int)area.x, (int)area.y, (int)(area.x+area.width), (int)(area.y+area.height));
 			d.beginRenderingSolidQuads();
 			d.drawBorder(area.x+18, area.y, area.x+area.width-SCROLLBAR_WIDTH, area.y+area.height);
+			// TODO: do we really need to loop over container slots? Can't we loop over tree.nodeBySlot instead?
 			for(Slot s : cont.slots) {
 				if(s.inventory instanceof PlayerInventory) {
 					int slotIndex = ((ISlotMixin)s).captchalogue_getSlotNum();
@@ -499,7 +521,9 @@ public class FetchModusTree extends FetchModus {
 						d.appendSolidQuad(n.layoutX-1, n.layoutY-1, n.layoutX+16, n.layoutY+16, Drawer.COL_LEFT_TOP, Drawer.COL_LEFT_TOP, Drawer.COL_LEFT_TOP, 1.0f);
 						d.appendSolidQuad(n.layoutX  , n.layoutY  , n.layoutX+17, n.layoutY+17, Drawer.COL_RIGHT_BOTTOM, Drawer.COL_RIGHT_BOTTOM, Drawer.COL_RIGHT_BOTTOM, 1.0f);
 						d.appendSolidQuad(n.layoutX  , n.layoutY  , n.layoutX+16, n.layoutY+16, Drawer.COL_SLOT, Drawer.COL_SLOT, Drawer.COL_SLOT, 1.0f);*/
-						d.drawBorder(n.layoutX-1, n.layoutY-1-(int)scrollPosition, n.layoutX+17, n.layoutY+17-(int)scrollPosition);
+						
+						// drawn afterwards
+						//d.drawBorder(n.layoutX-1, n.layoutY-1-(int)scrollPosition, n.layoutX+17, n.layoutY+17-(int)scrollPosition);
 						
 						if (n.left != null) {
 							// draw line to left child
@@ -510,6 +534,13 @@ public class FetchModusTree extends FetchModus {
 							appendLine(d, n, 10, 12, n.right, 7, 9);
 						}
 					}
+				}
+			}
+			
+			// Draw slot backgrounds
+			for(Node n : tree.nodeBySlot) {
+				if(n.isVisible) {
+					d.drawBorder(n.layoutX-1, n.layoutY-1-(int)scrollPosition, n.layoutX+17, n.layoutY+17-(int)scrollPosition);
 				}
 			}
 			
@@ -526,12 +557,30 @@ public class FetchModusTree extends FetchModus {
 			d.unrestrictRendering();
 		}
 		
+		private int savedSlotStackCount;
 		@Override
 		public void beforeDrawSlot(Slot slot, Drawer d) {
+			savedSlotStackCount = slot.getStack().getCount();
+			
+			int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
+			if(slotIndex >= 0 && slotIndex < 36 && slotIndex != CaptchalogueMod.MODUS_SLOT) {
+				if(slotIndex >= CaptchalogueMod.MODUS_SLOT)
+					slotIndex--;
+				
+				int totalCount = 0;
+				for(Node node = tree.nodeBySlot[slotIndex]; node != null; node = node.continuation)
+					totalCount += inv.getInvStack(node.invSlot).getCount();
+				
+				// Only called on the client, so there's no risk of item duplication by doing this, only desyncs
+				slot.getStack().setCount(totalCount);
+			}
+			
 			d.restrictRendering((int)area.x, (int)area.y+1, (int)(area.x+area.width-SCROLLBAR_WIDTH-1), (int)(area.y+area.height-1));
 		}
 		@Override
 		public void afterDrawSlot(Slot slot, Drawer d) {
+			if(!slot.getStack().isEmpty())
+				slot.getStack().setCount(savedSlotStackCount);
 			d.unrestrictRendering();
 		}
 		
@@ -584,17 +633,8 @@ public class FetchModusTree extends FetchModus {
 	
 	@Override
 	public void initialize(InventoryWrapper inv) {
-		int numUsedSlots = compactItemsToLowerIndices(inv, 0);
 		InventoryTree tree = new InventoryTree(inv, isRootMode);
 		tree.rewriteUnderlyingInventory();
-		
-		/*ItemStack[] stacks = new ItemStack[numUsedSlots];
-		for(int k = 0; k < numUsedSlots; k++) {
-			stacks[k] = inv.getInvStack(k);
-			inv.setInvStack(k, ItemStack.EMPTY);
-		}
-		for(ItemStack stack : stacks)
-			insert(inv, stack);*/
 	}
 	
 	@Override public void insert(InventoryWrapper inv, ItemStack stack) {

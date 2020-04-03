@@ -13,14 +13,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.mojang.datafixers.util.Pair;
 
 import compuglobalhypermeganet.CaptchalogueMod;
-import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
+import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -54,6 +56,11 @@ public class SlotMixin implements ISlotMixin {
 	@Override public void captchalogue_setPosition(int x, int y) {xPosition = x; yPosition = y;}
 	@Override public int captchalogue_getOriginalXPosition() {return originalX;}
 	@Override public int captchalogue_getOriginalYPosition() {return originalY;}
+	
+	@Unique private Container container;
+	
+	@Override public Container captchalogue_getContainer() {return container;}
+	@Override public void captchalogue_setContainer(Container cont) {this.container = cont;}
 	
 	@Inject(at=@At("RETURN"), method="<init>*")
 	public void afterInit(CallbackInfo info) {
@@ -108,20 +115,19 @@ public class SlotMixin implements ISlotMixin {
 	@Inject(at = @At(value="HEAD"), method="setStack(Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	private void overrideSetStack(ItemStack stack, CallbackInfo info) {
 		if (captchalogue_isPlayerSlot()) {
-			if (FetchModus.isProcessingPacket.get())
+			if(container != null)
+				((IContainerMixin)container).captchalogue_onSlotStackChanging((Slot)(Object)this, stack);
+
+			if (FetchModusType.isProcessingPacket.get())
 				return; // When the server is sending us the inventory state, no silly business - just replicate exactly what the server says.
 
 			if (invSlot == CaptchalogueMod.MODUS_SLOT) {
 				IPlayerInventoryMixin m = (IPlayerInventoryMixin)inventory;
-				FetchModus oldModus = m.getFetchModus();
-				// TODO: what should happen if the player has no modus or if the wrong item is somehow inserted here? They should get a null modus.
-				//if (!stack.isEmpty() && FetchModus.isModus(stack)) {
-					//m.setFetchModus(FetchModus.createModus(stack));
+				FetchModusType oldModus = m.getFetchModus();
 				((PlayerInventory)inventory).main.set(CaptchalogueMod.MODUS_SLOT, stack);
 				oldModus.deinitialize(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory));
 				m.getFetchModus().initialize(new InventoryWrapper.PlayerInventorySkippingModusSlot((PlayerInventory)inventory));
 				info.cancel();
-				//}
 				return;
 			}
 			if (((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, stack))

@@ -10,7 +10,7 @@ import net.minecraft.container.SlotActionType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
-public abstract class FetchModus {
+public abstract class FetchModusType {
 	
 	/*
 	 * TODO for moduses:
@@ -21,6 +21,8 @@ public abstract class FetchModus {
 	 * Queuestack might require a different order still in order to use both the first and last in the hotbar. (How would queuestack array do this?)
 	 *
 	 * Add an item that turns all textures to linear interpolation when you hold it in your inventory.
+	 * 
+	 * When insert() is called on the client with a tree modus, the container needs to be updated... how?
 	 *
 	 * moduses:
 	 *  Done: Queue
@@ -145,4 +147,8 @@ public abstract class FetchModus {
 
 	public void initialize(InventoryWrapper inv) {}
 	public void deinitialize(InventoryWrapper inv) {}
+	
+	public FetchModusState createFetchModusState(InventoryWrapper inv) {
+		return FetchModusState.NULL_STATE;
+	}
 }

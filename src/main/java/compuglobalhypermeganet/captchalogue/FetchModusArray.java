@@ -2,7 +2,7 @@ package compuglobalhypermeganet.captchalogue;
 
 import net.minecraft.item.ItemStack;
 
-public class FetchModusArray extends FetchModus {
+public class FetchModusArray extends FetchModusType {
 	@Override
 	public boolean canInsertToSlot(InventoryWrapper inv, int slot) {
 		return true;

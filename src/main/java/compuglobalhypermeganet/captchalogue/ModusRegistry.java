@@ -5,7 +5,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 
 public class ModusRegistry {
-	public static FetchModus getModus(PlayerInventory inventory) {
+	public static FetchModusType getModus(PlayerInventory inventory) {
 		ItemStack modus = inventory.getInvStack(CaptchalogueMod.MODUS_SLOT);
 		return getModus(modus);
 	}
@@ -14,19 +14,19 @@ public class ModusRegistry {
 		return getModus(stack) != null;
 	}
 	
-	public static FetchModus QUEUE = new FetchModusQueue();
-	public static FetchModus STACK = new FetchModusStack();
-	public static FetchModus ARRAY = new FetchModusArray();
-	public static FetchModus NULL = new FetchModusNull();
-	public static FetchModus MEMORY = new FetchModusMemory();
-	public static FetchModus TREE = new FetchModusTree(false);
-	public static FetchModus QUEUESTACK = new FetchModusQueuestack();
+	public static FetchModusType QUEUE = new FetchModusQueue();
+	public static FetchModusType STACK = new FetchModusStack();
+	public static FetchModusType ARRAY = new FetchModusArray();
+	public static FetchModusType NULL = new FetchModusNull();
+	public static FetchModusType MEMORY = new FetchModusMemory();
+	public static FetchModusType TREE = new FetchModusTree(false);
+	public static FetchModusType QUEUESTACK = new FetchModusQueuestack();
 	
-	public static FetchModus ARRAY_OF_QUEUE = new FetchModusArrayOfX(QUEUE);
-	public static FetchModus ARRAY_OF_STACK = new FetchModusArrayOfX(STACK);
-	public static FetchModus ARRAY_OF_QUEUESTACK = new FetchModusArrayOfX(QUEUESTACK);
+	public static FetchModusType ARRAY_OF_QUEUE = new FetchModusArrayOfX(QUEUE);
+	public static FetchModusType ARRAY_OF_STACK = new FetchModusArrayOfX(STACK);
+	public static FetchModusType ARRAY_OF_QUEUESTACK = new FetchModusArrayOfX(QUEUESTACK);
 	
-	public static FetchModus getModus(ItemStack stack) {
+	public static FetchModusType getModus(ItemStack stack) {
 		if (stack.getItem() == CaptchalogueMod.itemQueueFetchModus) return QUEUE;
 		if (stack.getItem() == CaptchalogueMod.itemStackFetchModus) return STACK;
 		if (stack.getItem() == CaptchalogueMod.itemArrayFetchModus) return ARRAY;

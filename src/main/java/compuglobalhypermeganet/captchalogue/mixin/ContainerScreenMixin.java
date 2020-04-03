@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import compuglobalhypermeganet.CaptchalogueMod;
-import compuglobalhypermeganet.captchalogue.FetchModus;
+import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.FetchModusGuiState;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
@@ -51,13 +51,13 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	private PlayerInventory inv;
 	
 	// updated every frame
-	private FetchModus modus;
+	private FetchModusType modus;
 	
 	private boolean printedUnsupportedMessage;
 	
 	@Unique
 	private void captchalogue_refreshInventoryLayout() {
-		ContainerScreen this_ = ((ContainerScreen)(Object)this);
+		ContainerScreen<?> this_ = ((ContainerScreen<?>)(Object)this);
 		if(inventorySlots == null)
 			inventorySlots = new Slot[36];
 		else
@@ -152,26 +152,6 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 		inventoryRect.setBounds(l, t, r-l, b-t);
 	}
 	
-	private int inventoryLayoutCheckFrames = 0;
-	
-	@Inject(at=@At("HEAD"), method="render(IIF)V")
-	public void onBeforeRender(CallbackInfo info) {
-		//System.out.println("onBeforeRender");
-		if(inventoryLayoutCheckFrames <= 1) {
-			captchalogue_refreshInventoryLayout();
-			inventoryLayoutCheckFrames = 120;
-		} else {
-			inventoryLayoutCheckFrames--;
-		}
-		modus = ModusRegistry.getModus(inv);
-		
-		if (unsupportedLayout)
-			return;
-		
-		
-		
-	}
-	
 	@Unique
 	private int captchalogue_getSlotAtVisualPosition(int x, int y) {
 		if (y < 0 || y > 3 || x < 0 || x > 8)
@@ -189,12 +169,23 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 		return ((IContainerMixin)((ContainerScreen<?>)(Object)this).getContainer()).getFetchModusGuiState();
 	}
 	
-	private int mouseX, mouseY;
+	@Unique private int inventoryLayoutCheckFrames = 0;
+	@Unique private int mouseX, mouseY;
+	
 	@Inject(at=@At(value="HEAD"), method="render(IIF)V")
-	public void saveMousePosition(int mouseX, int mouseY, float deltaTime, CallbackInfo info) {
+	public void onBeforeDraw(int mouseX, int mouseY, float deltaTime, CallbackInfo info) {
 		this.mouseX = mouseX;
 		this.mouseY = mouseY;
 		
+		//System.out.println("onBeforeRender");
+		if(inventoryLayoutCheckFrames <= 1) {
+			captchalogue_refreshInventoryLayout();
+			inventoryLayoutCheckFrames = 120;
+		} else {
+			inventoryLayoutCheckFrames--;
+		}
+		modus = ModusRegistry.getModus(inv);
+	
 		if (unsupportedLayout)
 			return;
 		
@@ -240,7 +231,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 				for(int x = 0; x < 9; x++, n++) {
 					int myGroup = modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x, y));
 					// Invisible slots are recorded with borders, but the borders aren't rendered
-					if(myGroup != FetchModus.BG_GROUP_INVISIBLE) {
+					if(myGroup != FetchModusType.BG_GROUP_INVISIBLE) {
 						borderLocations[n] |= RENDER_SELF;
 						if (x == 0 || modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x-1, y)) != myGroup) borderLocations[n] |= DIR_LEFT;
 						if (x == 8 || modus.getBackgroundGroupForSlot(captchalogue_getSlotAtVisualPosition(x+1, y)) != myGroup) borderLocations[n] |= DIR_RIGHT;
@@ -393,6 +384,9 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	
 	@Inject(at=@At("HEAD"), method="drawSlot(Lnet/minecraft/container/Slot;)V", cancellable=true)
 	public void drawSlotOverride(Slot slot, CallbackInfo info) {
+		if(unsupportedLayout)
+			return;
+		
 		//System.out.println("drawSlotOverride");
 		if(slot.inventory instanceof PlayerInventory) {
 			PlayerInventory inv = (PlayerInventory)slot.inventory;
@@ -427,10 +421,17 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	
 	@Inject(at=@At("RETURN"),method="drawSlot(Lnet/minecraft/container/Slot;)V")
 	public void afterDrawSlot(Slot slot, CallbackInfo info) {
+		if(unsupportedLayout)
+			return;
+		
 		FetchModusGuiState gs = getFetchModusGuiState();
 		DrawerImpl d = captchalogue_getDrawerImpl();
-		if(slot.inventory instanceof PlayerInventory)
+		if(slot.inventory instanceof PlayerInventory) {
+			int slotNum = ((ISlotMixin)slot).captchalogue_getSlotNum();
+			if(slotNum < 0 || slotNum >= 36)
+				return;
 			gs.afterDrawSlot(slot, d);
+		}
 	}
 	
 	private AdditionalContainerScreenElement extraGuiElement;
@@ -443,12 +444,17 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	
 	@Inject(at=@At("HEAD"), method="mouseDragged(DDIDD)Z")
 	public void hookMouseDragged(double x, double y, int button, double dx, double dy, CallbackInfoReturnable<Boolean> info) {
+		if(unsupportedLayout)
+			return;
 		// XXX: return value ignored
 		extraGuiElement.mouseDragged(x, y, button, dx, dy);
 	}
 	
 	@Inject(at=@At("HEAD"), method="mouseClicked(DDI)Z")
 	public void hookMouseClicked(double x, double y, int button, CallbackInfoReturnable<Boolean> info) {
+		if(unsupportedLayout)
+			return;
+		
 		// XXX: return value ignored
 		extraGuiElement.mouseClicked(x, y, button);
 	}
@@ -458,6 +464,8 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	
 	@Inject(at=@At("HEAD"), method="isPointOverSlot(Lnet/minecraft/container/slot;DD)Z", cancellable=true)
 	public void overrideIsPointOverSlot(Slot slot, double x, double y, CallbackInfoReturnable<Boolean> info) {
+		if(unsupportedLayout)
+			return;
 		if(!(slot.inventory instanceof PlayerInventory))
 			return;
 		FetchModusGuiState gs = getFetchModusGuiState();
@@ -483,7 +491,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 				if(slotIndex == CaptchalogueMod.MODUS_SLOT || slotIndex < 0 || slotIndex >= 36)
 					return true; // no override
 				
-				FetchModus modus = ((IPlayerInventoryMixin)inv).getFetchModus();
+				FetchModusType modus = ((IPlayerInventoryMixin)inv).getFetchModus();
 				
 				boolean holdingItem = !inv.getCursorStack().isEmpty();
 				
