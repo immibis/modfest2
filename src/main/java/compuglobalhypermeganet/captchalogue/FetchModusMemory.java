@@ -46,19 +46,21 @@ public class FetchModusMemory extends FetchModusType {
 	}
 	
 	public static class GuiState extends FetchModusGuiState {
-		// [MODUS_SLOT] is unused.
-		// Maps display slot number -> underlying slot number.
-		public int[] randomLayout = new int[36];
+		// Maps slot number of the displayed slot -> slot number where the item is stored. Both numberings skip over MODUS_SLOT. (they are InventoryWrapper indices)
+		public int[] randomLayout = new int[35];
 		
+		// player slot indices, i.e. MODUS_SLOT is not skipped in the numbering
 		public int revealedSlot1 = -1;
 		public int revealedSlot2 = -1;
 		
 		public long timeoutAt;
 		
 		public int randomSeed;
+		private InventoryWrapper invw;
 		
 		public GuiState(InventoryWrapper inv) {
 			setup(inv, inv.getPlayer().world.random.nextInt());
+			this.invw = inv;
 		}
 		
 		public void setup(InventoryWrapper inv, int randomSeed) {
@@ -70,8 +72,8 @@ public class FetchModusMemory extends FetchModusType {
 			Random random = new Random(randomSeed);
 
 			List<Integer> availableLayoutSlots = new ArrayList<>();
-			for(int k = 0; k < 36; k++)
-				if(k != CaptchalogueMod.MODUS_SLOT && !isNormalSlot(k))
+			for(int k = 0; k < randomLayout.length; k++)
+				if(!isNormalSlot(k))
 					availableLayoutSlots.add(k);
 			// TODO: is Collections.shuffle(Random) always the same algorithm in different Java implementations?
 			Collections.shuffle(availableLayoutSlots, random);
@@ -117,7 +119,7 @@ public class FetchModusMemory extends FetchModusType {
 		@Environment(EnvType.CLIENT)
 		public boolean overrideDrawSlot(ContainerScreen<?> screen, int screenX, int screenY, Slot slot, PlayerInventory inv, int slotIndex, int cursorX, int cursorY) {
 			
-			if (isNormalSlot(slotIndex))
+			if (isNormalSlot(slotIndex) || slotIndex == CaptchalogueMod.MODUS_SLOT)
 				return false; // no override
 			
 			GuiState state = (GuiState)((IContainerMixin)screen.getContainer()).getFetchModusGuiState();
@@ -129,10 +131,12 @@ public class FetchModusMemory extends FetchModusType {
 				state.timeoutAt = 0;
 			}
 			
+			slotIndex = InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(slotIndex);
+			
 			if(slotIndex == state.revealedSlot1 || slotIndex == state.revealedSlot2) {
 				// draw the item in the slot
 				
-				ItemStack stack = (state.randomLayout[slotIndex] < 0 ? ItemStack.EMPTY : inv.main.get(state.randomLayout[slotIndex]));
+				ItemStack stack = (state.randomLayout[slotIndex] < 0 ? ItemStack.EMPTY : invw.getInvStack(state.randomLayout[slotIndex]));
 				
 				if (cursorX >= slot.xPosition && cursorY >= slot.yPosition && cursorX < slot.xPosition+16 && cursorY < slot.yPosition+16) {
 					// Mostly copied from the normal slot hover highlight code
@@ -196,8 +200,9 @@ public class FetchModusMemory extends FetchModusType {
 			GuiState state = (GuiState)((IContainerMixin)screen.getContainer()).getFetchModusGuiState();
 			if (slot == state.revealedSlot1 || slot == state.revealedSlot2) {
 				// Look for the real slot which holds the item we are hovering over
+				slot = InventoryWrapper.PlayerInventorySkippingModusSlot.toUnderlyingSlotIndex(state.randomLayout[slot]); // actual item storage slot
 				for(Slot otherSlot : screen.getContainer().slots) {
-					if(otherSlot.inventory == inv && ((ISlotMixin)otherSlot).captchalogue_getSlotNum() == state.randomLayout[slot])
+					if(otherSlot.inventory == inv && ((ISlotMixin)otherSlot).captchalogue_getSlotNum() == slot)
 						return otherSlot;
 				}
 				return null;
@@ -222,31 +227,35 @@ public class FetchModusMemory extends FetchModusType {
 		}
 
 		@Override public boolean hasCustomInsert() {return false;}
-		@Override public void insert(ItemStack stack) {throw new AssertionError("unreachable");}
+		@Override public void insert(ItemStack stack, boolean allowViolentExpulsion) {throw new AssertionError("unreachable");}
 
 		@Override
 		public boolean affectsHotbarRendering() {
 			return true;
 		}
 		@Override
-		public boolean hidesHotbarSlot(int k) {
-			return k >= ABNORMAL_RANGE_START;
+		public ItemStack modifyHotbarRenderItem(int slot, ItemStack stack) {
+			return slot >= ABNORMAL_RANGE_START ? ItemStack.EMPTY : stack;
 		}
 		@Override
 		protected boolean blocksAccessToHotbarSlot_(int slot) {
-			return hidesHotbarSlot(slot);
+			return slot >= ABNORMAL_RANGE_START;
 		}
 		
 		@Override
 		public boolean overrideInventoryClick(Container cont, PlayerInventory plinv, int slotIndex, SlotActionType actionType, int clickData) {
 			
-			if (isNormalSlot(slotIndex))
+			GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
+			
+			if (isNormalSlot(slotIndex)) {
+				state.revealedSlot1 = -1;
+				state.revealedSlot2 = -1;
+				state.timeoutAt = 0;
 				return false; // no override
+			}
 			
 			if(actionType != SlotActionType.PICKUP && actionType != SlotActionType.QUICK_MOVE) // normal click or shift-click on slot
 				return true;
-			
-			GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
 			
 			// Client generates random seed; sends it on every click (in ClickWindowC2SPacket); server copies it.
 			// If the client has changed the random seed then the server re-randomizes its inventory mapping based on the new seed.
@@ -330,7 +339,7 @@ public class FetchModusMemory extends FetchModusType {
 					plinv.player.getX(), plinv.player.getY(), plinv.player.getZ(),
 					SoundEvents.ENTITY_PLAYER_LEVELUP,
 					plinv.player.getSoundCategory(),
-					0.5F, 1.0F
+					0.1F, 1.0F
 				);
 			}
 			return true;

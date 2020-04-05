@@ -4,15 +4,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import compuglobalhypermeganet.captchalogue.FetchModusHashtable;
+import compuglobalhypermeganet.captchalogue.FetchModusState;
+import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
+import net.fabricmc.fabric.api.loot.v1.FabricLootPoolBuilder;
+import net.fabricmc.fabric.api.loot.v1.event.LootTableLoadingCallback;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.UniformLootTableRange;
+import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.nbt.AbstractNumberTag;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.CompoundTag;
@@ -27,6 +40,8 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
@@ -49,11 +64,12 @@ public class CaptchalogueMod implements ModInitializer {
 	
 	// basic structures (queuestack is still basic)
 	public static final Item itemQueueFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemStackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemStackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(64)); // Stack moduses stack, because lame pun.
 	public static final Item itemArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueuestackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemTreeFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemTreeLeafFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemTreeRootFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	
 	// minigames
 	public static final Item itemMemoryFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
@@ -62,7 +78,6 @@ public class CaptchalogueMod implements ModInitializer {
 	public static final Item itemQueueArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemStackArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueuestackArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemTreeArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	// array of hashtables is functionally equivalent to hashtable of arrays
 	
 	// hashtables with collision avoidance
@@ -70,11 +85,10 @@ public class CaptchalogueMod implements ModInitializer {
 	public static final Item itemStackHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueueHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueuestackHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemTreeHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-
+	
 	public static final List<Item> DEFAULT_MODUSES = Arrays.asList(
 		itemStackFetchModus,
-		itemTreeFetchModus,
+		itemTreeLeafFetchModus,
 		itemHashtableFetchModus
 	);
 	
@@ -86,19 +100,55 @@ public class CaptchalogueMod implements ModInitializer {
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queuestack_fetch_modus"), itemQueuestackFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "hashtable_fetch_modus"), itemHashtableFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "memory_fetch_modus"), itemMemoryFetchModus);
-		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "tree_fetch_modus"), itemTreeFetchModus);
+		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "tree_leaf_fetch_modus"), itemTreeLeafFetchModus);
+		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "tree_root_fetch_modus"), itemTreeRootFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queue_array_fetch_modus"), itemQueueArrayFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "stack_array_fetch_modus"), itemStackArrayFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queuestack_array_fetch_modus"), itemQueuestackArrayFetchModus);
-		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "tree_array_fetch_modus"), itemTreeArrayFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "array_hashtable_fetch_modus"), itemArrayHashtableFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queue_hashtable_fetch_modus"), itemQueueHashtableFetchModus);
+		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "stack_hashtable_fetch_modus"), itemStackHashtableFetchModus);
 		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "queuestack_hashtable_fetch_modus"), itemQueuestackHashtableFetchModus);
-		Registry.register(Registry.ITEM, new Identifier("compuglobalhypermeganet", "tree_hashtable_fetch_modus"), itemTreeHashtableFetchModus);
+		
+		LootTableLoadingCallback.EVENT.register((resourceManager, lootManager, id, supplier, setter) -> {
+			if(id.getNamespace().equals("minecraft") && id.getPath().equals("chests/simple_dungeon")) {
+				FabricLootPoolBuilder poolBuilder = FabricLootPoolBuilder.builder()
+						.withRolls(UniformLootTableRange.between(1.0f, 2.0f));
+				
+				// 100% total chance
+				// 50%: memory
+				// 26%: array (main way to get Array!)
+				// 6%: {hashtable | tree | stack}
+				// 18%: {hashtable of arrays | array of stacks | array of queues}
+				poolBuilder.withEntry(ItemEntry.builder(itemMemoryFetchModus).setWeight(50));
+				poolBuilder.withEntry(ItemEntry.builder(itemArrayFetchModus).setWeight(26));
+				
+				poolBuilder.withEntry(ItemEntry.builder(itemHashtableFetchModus).setWeight(2));
+				poolBuilder.withEntry(ItemEntry.builder(itemTreeLeafFetchModus).setWeight(2));
+				poolBuilder.withEntry(ItemEntry.builder(itemStackFetchModus).setWeight(2));
+				
+				poolBuilder.withEntry(ItemEntry.builder(itemStackHashtableFetchModus).setWeight(6));
+				poolBuilder.withEntry(ItemEntry.builder(itemStackArrayFetchModus).setWeight(6));
+				poolBuilder.withEntry(ItemEntry.builder(itemArrayHashtableFetchModus).setWeight(6));
+				
+				supplier.withPool(poolBuilder);
+			}
+		});
+	}
+	
+	
+	
+	public static int hashItem(ItemStack a, FetchModusHashtable.HashMode hashMode) {
+		String string = a.getName().getString().toLowerCase(Locale.ROOT);
+		int hash = 0;
+		for(int k = 0; k < string.length(); k++)
+			hash += hashMode.hashCodeFor(string.charAt(k));
+		return hash;
 	}
 	
 	public static int compareItemsForTree(ItemStack a, ItemStack b) {
-		int res = a.getName().getString().compareTo(b.getName().getString());
+		// case-insensitive name comparison
+		int res = a.getName().getString().toLowerCase(Locale.ROOT).compareTo(b.getName().getString().toLowerCase(Locale.ROOT));
 		if(res != 0) return res;
 		// As many tie breakers as possible. Compare the entire NBT tag.
 		CompoundTag cta = a.getTag();
@@ -238,6 +288,133 @@ public class CaptchalogueMod implements ModInitializer {
 			if(!world.isClient())
 				throw new RuntimeException("World isn't server world or client world?! "+world);
 			executeLaterOnClientWorld.accept(world, runnable);
+		}
+	}
+
+	public static void launchExcessItems(PlayerEntity player, ItemStack stack) {
+		if(!player.world.isClient() && !stack.isEmpty()) {
+			final int RANGE = 10;
+			Vec3d playerPos = player.getPos().add(0, player.getEyeHeight(player.getPose()), 0);
+			Box searchBox = new Box(playerPos.getX()-RANGE, playerPos.getY()-RANGE, playerPos.getZ()-RANGE, playerPos.getX()+RANGE, playerPos.getY()+RANGE, playerPos.getZ()+RANGE);
+			
+			List<Entity> entsInRange = player.world.getEntities(player, searchBox, (ent) -> {
+				return ent.isAttackable() && !ent.isSpectator() && ent.isAlive();
+			});
+			
+			Entity closest = null;
+			/*double closestDistSq = RANGE*RANGE;
+			for(Entity ent : entsInRange) {
+				double distSq = ent.getPos().squaredDistanceTo(playerPos);
+				if(distSq < closestDistSq) {
+					closestDistSq = distSq;
+					closest = ent;
+				}
+			}*/
+			closest = (entsInRange.isEmpty() ? null : entsInRange.get(player.world.random.nextInt(entsInRange.size())));
+			
+			ItemEntity ent = new ItemEntity(player.world, playerPos.getX(), playerPos.getY(), playerPos.getZ(), stack.copy());
+			
+			final double SPEED = 0.3;
+			if (closest == null) {
+				// Pick a random horizontal direction, plus or minus a little bit of vertical.
+				double dir = player.world.random.nextDouble()*Math.PI*2;
+				ent.setVelocity(Math.sin(dir)*SPEED, 0.2, Math.cos(dir)*SPEED);
+			} else {
+				Vec3d delta = closest.getPos().add(0, closest.getBodyY(0.5f)-closest.getY(), 0).subtract(playerPos).multiply(SPEED);
+				ent.setVelocity(delta);
+				
+				// Too lazy to make an item projectile entity that hurts on impact and can be picked up. Just hurt the target entity directly and immediately.
+				closest.damage(DamageSource.ANVIL, (int)Math.ceil(Math.sqrt(stack.getCount())));
+			}
+			ent.setPickupDelay(20);
+			player.world.spawnEntity(ent);
+			
+			
+		}
+		stack.setCount(0); // caller shouldn't use the stack any more, but just in case
+	}
+
+
+	private static boolean checkTriggerHashCodeProbability(Random random, int numExclamationMarks, int numUppercaseLetters, int numLowercaseLetters, int segmentLength) {
+		if (numUppercaseLetters == 0 && numLowercaseLetters == 0)
+			return false;
+		if (segmentLength - numExclamationMarks > 15)
+			return false;
+		int prob;
+		if (numUppercaseLetters > numLowercaseLetters*2) {
+			prob = 2;
+			if(numExclamationMarks > 0) prob += 2;
+			prob += 2*numExclamationMarks;
+		} else {
+			prob = 0;
+			prob += 2*numExclamationMarks;
+		}
+		return prob >= 10 || random.nextInt(10) < prob;
+	}
+	
+	private static void triggerHashtableChatMessageEject(PlayerEntity player, int hashCode) {
+		hashCode %= FetchModusHashtable.NUM_HOTBAR_SLOTS;
+		ItemStack stack = player.inventory.getInvStack(hashCode);
+		if(!stack.isEmpty()) {
+			player.inventory.setInvStack(hashCode, ItemStack.EMPTY);
+			launchExcessItems(player, stack);
+		}
+	}
+
+	public static void triggerHashCodesForChatMessage(String message, PlayerEntity player) {
+		FetchModusState modus = ((IPlayerInventoryMixin)player.inventory).getFetchModus();
+		if(!(modus instanceof FetchModusHashtable.State))
+			return;
+		
+		// XXX hardcoded
+		FetchModusHashtable.HashMode hashMode = FetchModusHashtable.HASH_MODE_VOWELS_CONSONANTS;
+		
+		// Probability:
+		
+		// AAAA!!! -> 100%
+		// AAAA!! -> 80%
+		// AAAA! -> 60%
+		// AAAA -> 20%
+		// aaaa! -> 10%
+		// aaaa!!! -> 30%
+		// aaaa!!!!!!!!!! -> 50%
+		// aaaa -> 0%
+		// !!! -> 0%
+		
+		// Mixed uppercase and lowercase counts as uppercase if more than 2/3 of characters are uppercase.
+		// Lowercase segments: start at 0%, add 10% for each exclamation mark, to a maximum of 50%.
+		// Uppercase segments: start at 20%, add 20% if any exclamation marks, add 20% for each exclamation mark, to a maximum of 100%.
+		
+		// Also, the segments have to be short. Anything over 15 characters, excluding exclamation marks, is disqualified.
+
+		int currentSegmentStart = 0;
+		int numUppercaseLetters = 0;
+		int numLowercaseLetters = 0;
+		int numExclamationMarks = 0;
+		int segmentHashCode = 0;
+		for(int k = 0; k < message.length(); k++) {
+			char c = message.charAt(k);
+			if(c == '!')
+				numExclamationMarks++;
+			else {
+				if (numExclamationMarks > 0) {
+					if (checkTriggerHashCodeProbability(player.world.random, numExclamationMarks, numUppercaseLetters, numLowercaseLetters, k - currentSegmentStart)) {
+						triggerHashtableChatMessageEject(player, segmentHashCode);
+					}
+					currentSegmentStart = k;
+					segmentHashCode = numUppercaseLetters = numLowercaseLetters = numExclamationMarks = 0;
+				}
+				if(c >= 'a' && c <= 'z')
+					numLowercaseLetters++;
+				if(c >= 'A' && c <= 'Z') {
+					numUppercaseLetters++;
+					segmentHashCode += hashMode.hashCodeFor((char)(c + 'a' - 'A'));
+				} else
+					segmentHashCode += hashMode.hashCodeFor(c);
+			}
+		}
+		if (checkTriggerHashCodeProbability(player.world.random, numExclamationMarks, numUppercaseLetters, numLowercaseLetters, message.length() - currentSegmentStart)) {
+			triggerHashtableChatMessageEject(player, segmentHashCode);
 		}
 	}
 }

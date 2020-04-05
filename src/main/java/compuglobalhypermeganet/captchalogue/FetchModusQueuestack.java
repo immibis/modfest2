@@ -65,7 +65,7 @@ public class FetchModusQueuestack extends FetchModusType {
 		
 		@Override
 		public void initialize() {
-			compactItemsToLowerIndices(inv, 0);
+			compactItemsToLowerIndices(inv, 0, true);
 			
 			// Find the end of the queue. (If inventory is empty, leave it at slot 0)
 			int highestUsedSlot = inv.getNumSlots() - 1;
@@ -140,7 +140,7 @@ public class FetchModusQueuestack extends FetchModusType {
 		}
 		
 		@Override
-		public void insert(ItemStack stack) {
+		public void insert(ItemStack stack, boolean allowViolentExpulsion) {
 			final int LAST_ITEM_SLOT = inv.getLastItemSlot();
 			
 			// When you shift-click a slot, the caller checks if all items were moved (stack.isEmpty() after the insert call)
@@ -183,6 +183,16 @@ public class FetchModusQueuestack extends FetchModusType {
 				}
 			}
 			initialize(); // TODO: make this more efficient than brute force (undoes previous deinitialize)
+			
+			if (allowViolentExpulsion) {
+				// no free slots? launch whatever is at the head of the queue, then push the new item.
+				ItemStack launchItems = inv.getInvStack(0);
+				if(launchItems.isEmpty())
+					throw new AssertionError("unreachable - we have no empty slots, not even this one");
+				inv.setInvStack(0, ItemStack.EMPTY);
+				CaptchalogueMod.launchExcessItems(inv.getPlayer(), launchItems);
+				insert(stack, false); // retry. Violent expulsion shouldn't happen again, but pass false just in case, to prevent infinite recursion.
+			}
 		}
 
 		@Override
@@ -214,11 +224,11 @@ public class FetchModusQueuestack extends FetchModusType {
 						// insert one item
 						ItemStack one = cursor.copy();
 						one.setCount(1);
-						insert(one);
+						insert(one, true);
 						if(one.isEmpty())
 							cursor.decrement(1);
 					} else {
-						insert(cursor);
+						insert(cursor, true);
 					}
 				}
 				return true;
@@ -248,7 +258,7 @@ public class FetchModusQueuestack extends FetchModusType {
 		@Override
 		public void afterPossibleInventoryChange(long changedSlotMask, boolean serverSync) {
 			// Brute force! :)
-			if (!serverSync) {
+			if (!serverSync || inv.getInvStack(0).isEmpty()) {
 				deinitialize();
 				initialize();
 			}

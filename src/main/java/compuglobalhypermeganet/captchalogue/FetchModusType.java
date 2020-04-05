@@ -6,10 +6,12 @@ public abstract class FetchModusType {
 	
 	public static ThreadLocal<Boolean> isProcessingPacket = ThreadLocal.withInitial(() -> Boolean.FALSE);
 	
-	static int compactItemsToLowerIndices(InventoryWrapper inv, int start) {
+	static int compactItemsToLowerIndices(InventoryWrapper inv, int start, boolean alsoMergeStacks) {
 		int to = start;
 		int from = start;
 		while(from < inv.getNumSlots()) {
+			if (to > 0 && alsoMergeStacks)
+				InventoryUtils.combineStack(inv.getInvStack(to-1), inv.getInvStack(from));
 			if(!inv.getInvStack(from).isEmpty()) {
 				if (from != to)
 					inv.setInvStack(to, inv.getInvStack(from));

@@ -5,12 +5,15 @@ import net.minecraft.item.ItemStack;
 public class FetchModusArray extends FetchModusType {
 	@Override
 	public FetchModusState createFetchModusState(InventoryWrapper inv) {
-		return State.instance;
+		return new State(inv);
 	}
 	
 	public static class State extends FetchModusState {
 
-		public static State instance = new State();
+		private InventoryWrapper inv;
+		public State(InventoryWrapper inv) {
+			this.inv = inv;
+		}
 		
 		@Override
 		public boolean canInsertToSlot(int slot) {
@@ -28,8 +31,9 @@ public class FetchModusArray extends FetchModusType {
 		}
 
 		@Override
-		public void insert(ItemStack stack) {
-			throw new AssertionError("unreachable");
+		public void insert(ItemStack stack, boolean allowViolentExpulsion) {
+			// Even though we have hasCustomInsert false, this is called from FetchModusHashtableOfX(FetchModusArray).
+			InventoryUtils.insertStack(inv, stack, 0, inv.getNumSlots());
 		}
 		
 	}

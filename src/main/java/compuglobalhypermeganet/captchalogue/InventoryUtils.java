@@ -15,7 +15,7 @@ public class InventoryUtils {
 		if (!stack.isEmpty()) {
 			if (stack.isDamaged()) {
 				for(int k = slotStart; k < slotEnd; k++) {
-					if(inv.getInvStack(k) == null) {
+					if(inv.getInvStack(k).isEmpty()) {
 						inv.setInvStack(k, stack.copy());
 						inv.getInvStack(k).setCooldown(5);
 						stack.setCount(0);
@@ -40,6 +40,16 @@ public class InventoryUtils {
 						}
 					}
 				}
+			}
+		}
+	}
+	
+	public static void combineStack(ItemStack to, ItemStack from) {
+		if (!to.isEmpty() && !from.isEmpty() && Container.canStacksCombine(to, from)) {
+			int ntransfer = Math.min(from.getCount(), to.getMaxCount() - to.getCount());
+			if (ntransfer > 0) {
+				to.increment(ntransfer);
+				from.decrement(ntransfer);
 			}
 		}
 	}

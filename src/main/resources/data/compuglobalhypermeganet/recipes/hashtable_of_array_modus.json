@@ -1,0 +1,9 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients": [
+		{"item": "compuglobalhypermeganet:hashtable_fetch_modus"},
+		{"item": "compuglobalhypermeganet:array_fetch_modus"}
+	],
+	"result": {"item": "compuglobalhypermeganet:array_hashtable_fetch_modus"}
+}
+

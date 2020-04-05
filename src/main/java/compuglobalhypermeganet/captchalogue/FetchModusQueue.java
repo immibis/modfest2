@@ -42,7 +42,7 @@ public class FetchModusQueue extends FetchModusType {
 		
 		@Override
 		public void initialize() {
-			compactItemsToLowerIndices(inv, 0);
+			compactItemsToLowerIndices(inv, 0, true);
 		}
 		
 		@Override
@@ -69,7 +69,7 @@ public class FetchModusQueue extends FetchModusType {
 		}
 		
 		@Override
-		public void insert(ItemStack stack) {
+		public void insert(ItemStack stack, boolean allowViolentExpulsion) {
 			ItemStack curStackLast = inv.getInvStack(getLastFilledSlot());
 			if(!curStackLast.isEmpty() && Container.canStacksCombine(curStackLast, stack)) {
 				int ntransfer = Math.min(stack.getCount(), curStackLast.getMaxCount() - curStackLast.getCount());
@@ -84,6 +84,17 @@ public class FetchModusQueue extends FetchModusType {
 					stack.setCount(0);
 					return;
 				}
+			}
+			
+			if (allowViolentExpulsion) {
+				// no free slots? launch whatever is at the head of the queue, shift the queue down, then push the new item.
+				ItemStack launchItems = inv.getInvStack(0);
+				if(launchItems.isEmpty())
+					throw new AssertionError("unreachable - we have no empty slots, not even this one");
+				inv.setInvStack(0, ItemStack.EMPTY);
+				initialize(); // shift the queue down
+				CaptchalogueMod.launchExcessItems(inv.getPlayer(), launchItems);
+				insert(stack, false); // retry. Violent expulsion shouldn't happen again, but pass false just in case, to prevent infinite recursion.
 			}
 		}
 		
@@ -116,11 +127,11 @@ public class FetchModusQueue extends FetchModusType {
 						// insert one item
 						ItemStack one = cursor.copy();
 						one.setCount(1);
-						insert(one);
+						insert(one, true);
 						if(one.isEmpty())
 							cursor.decrement(1);
 					} else {
-						insert(cursor);
+						insert(cursor, true);
 					}
 				}
 				return true;

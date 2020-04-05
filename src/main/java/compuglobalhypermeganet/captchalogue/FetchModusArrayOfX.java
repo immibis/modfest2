@@ -95,9 +95,9 @@ public class FetchModusArrayOfX extends FetchModusType {
 				ItemStack stack = inv.getInvStack(slot);
 				if (!stack.isEmpty()) {
 					inv.setInvStack(slot, ItemStack.EMPTY);
-					insert(stack);
+					insert(stack, true);
 					if (!stack.isEmpty())
-						inv.getPlayer().dropItem(stack, false, true);
+						CaptchalogueMod.launchExcessItems(inv.getPlayer(), stack);
 				}
 			}
 		}
@@ -129,11 +129,12 @@ public class FetchModusArrayOfX extends FetchModusType {
 			return bases[0].hasCustomInsert();
 		}
 		@Override
-		public void insert(ItemStack stack) {
+		public void insert(ItemStack stack, boolean allowViolentExpulsion) {
 			for(FetchModusState base : bases) {
 				if(stack.isEmpty())
 					break;
-				base.insert(stack);
+				// Don't allow violent expulsion when inserting into a base modus. Otherwise the item would always be placed in the first one even if other ones aren't full.
+				base.insert(stack, false);
 			}
 		}
 		

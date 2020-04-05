@@ -42,9 +42,7 @@ public class FetchModusNull extends FetchModusType {
 				ItemStack stack = inv.getInvStack(k);
 				if(!stack.isEmpty()) {
 					inv.setInvStack(k, ItemStack.EMPTY);
-					
-					// Second parameter makes items drop in a much bigger range; third parameter sets the thrower?
-					player.dropItem(stack, false, true);
+					CaptchalogueMod.launchExcessItems(player, stack);
 				}
 			}
 		}
@@ -65,8 +63,11 @@ public class FetchModusNull extends FetchModusType {
 		}
 		
 		@Override
-		public void insert(ItemStack stack) {
-			// no-op; can't insert
+		public void insert(ItemStack stack, boolean allowViolentExpulsion) {
+			if (allowViolentExpulsion) {
+				CaptchalogueMod.launchExcessItems(inv.getPlayer(), stack.copy());
+				stack.setCount(0);
+			}
 		}
 		
 		@Override

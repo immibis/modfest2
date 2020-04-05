@@ -3,6 +3,7 @@ package compuglobalhypermeganet.captchalogue.mixin;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.util.Arrays;
+import java.util.List;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -86,6 +87,10 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 					}
 					inventorySlots[slotNum] = s;
 				}
+				
+				// if the container switches from supported to unsupported layout (e.g. creative inventory changing tabs), make sure to put all the slots back
+				ISlotMixin asSlotMixin = (ISlotMixin)s;
+				asSlotMixin.captchalogue_setPosition(asSlotMixin.captchalogue_getOriginalXPosition(), asSlotMixin.captchalogue_getOriginalYPosition());
 			}
 		}
 		if(inv == null) {
@@ -153,6 +158,11 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 		inventoryRect.setBounds(l, t, r-l, b-t);
 	}
 	
+	@Override
+	public void captchalogue_invalidateLayout() {
+		inventoryLayoutCheckFrames = 0;
+	}
+	
 	@Unique
 	private int captchalogue_getSlotAtVisualPosition(int x, int y) {
 		if (y < 0 || y > 3 || x < 0 || x > 8)
@@ -206,7 +216,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 		// 0xC6C6C6 (198,198,198) is the standard Minecraft ContainerScreen background colour
 		// Some mod ContainerScreens use different colours. FUTURE: do something dynamic with the background texture. (Maybe use the most prevalent colour; still won't work for non-solid-colour backgrounds)
 		
-		DrawerImpl d = captchalogue_getDrawerImpl();
+		DrawerImpl d = captchalogue_getDrawerImpl(true);
 		
 		if(modus.overridesGuiSlotVisualConnectivity()) {
 			
@@ -375,11 +385,12 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	private DrawerImpl captchalogue_drawerImpl;
 	
 	@Unique
-	private DrawerImpl captchalogue_getDrawerImpl() {
+	private DrawerImpl captchalogue_getDrawerImpl(boolean needTranslationMatrix) {
+		// in drawSlot the global matrix has the GUI translation already (needTranslationMatrix=false), but in drawBackground it doesn't so we apply it (needTranslationMatrix=true)
 		if(captchalogue_drawerImpl == null)
 			captchalogue_drawerImpl = new DrawerImpl();
-		Matrix4f matrix = Matrix4f.translate(this.x, this.y, 0.0f);
-		captchalogue_drawerImpl.setMatrix(matrix);
+		Matrix4f matrix = Matrix4f.translate(needTranslationMatrix ? this.x : 0, needTranslationMatrix ? this.y : 0, 0.0f);
+		captchalogue_drawerImpl.setMatrix(matrix, this.x, this.y);
 		return captchalogue_drawerImpl;
 	}
 	
@@ -399,7 +410,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 			if (gs.overrideDrawSlot((ContainerScreen<?>)(Object)this, x, y, slot, inv, slotNum, mouseX-x, mouseY-y)) {
 				info.cancel();
 			} else {
-				DrawerImpl d = captchalogue_getDrawerImpl();
+				DrawerImpl d = captchalogue_getDrawerImpl(false);
 				if(slot.inventory instanceof PlayerInventory)
 					gs.beforeDrawSlot(slot, d);
 			}
@@ -426,7 +437,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 			return;
 		
 		FetchModusGuiState gs = getFetchModusGuiState();
-		DrawerImpl d = captchalogue_getDrawerImpl();
+		DrawerImpl d = captchalogue_getDrawerImpl(false);
 		if(slot.inventory instanceof PlayerInventory) {
 			int slotNum = ((ISlotMixin)slot).captchalogue_getSlotNum();
 			if(slotNum < 0 || slotNum >= 36)
@@ -439,7 +450,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	
 	@Inject(at=@At("HEAD"), method="init()V")
 	public void additionalInit(CallbackInfo info) {
-		extraGuiElement = new AdditionalContainerScreenElement((ContainerScreen)(Object)this);
+		extraGuiElement = new AdditionalContainerScreenElement((ContainerScreen<?>)(Object)this);
 		//children.add(extraGuiElement); // accounts for mouse and keyboard callbacks, but not rendering // actually most callbacks don't go through this so we have to extend them anyway
 	}
 	
@@ -483,7 +494,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	// Don't highlight non-takeable slots when the mouse is over them.
 	// We still need to set focusedSlot, to get the tooltip
 	@Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/client/gui/screen/ingame/ContainerScreen;isPointOverSlot(Lnet/minecraft/container/Slot;DD)Z"), method="render(IIF)V")
-	public boolean slotHoverHighlight_replace_isPointOverSlot(ContainerScreen receiver, Slot slot, double x, double y) {
+	public boolean slotHoverHighlight_replace_isPointOverSlot(ContainerScreen<?> receiver, Slot slot, double x, double y) {
 		// receiver == this
 		if (isPointOverSlot(slot, x, y)) {
 			if (slot.inventory instanceof PlayerInventory) {
@@ -522,5 +533,22 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	@Override
 	public void captchalogue_onMouseClick(Slot slot, int invSlot, int button, SlotActionType slotActionType) {
 		onMouseClick(slot, invSlot, button, slotActionType);
+	}
+	
+	@Unique
+	private FetchModusState captchalogue_findFetchModus() {
+		for(Slot s : ((ContainerScreen<?>)(Object)this).getContainer().slots) {
+			if(s.inventory instanceof PlayerInventory)
+				return ((IPlayerInventoryMixin)inv).getFetchModus();
+		}
+		return null;
+	}
+	
+	@Override
+	public void captchalogue_fiddleWithItemRenderTooltip(List<String> tooltip) {
+		// Don't check unsupportedLayout. This is valid even with unsupportedLayout.
+		FetchModusState modus = captchalogue_findFetchModus();
+		if(modus != null)
+			modus.fiddleWithItemRenderTooltip(tooltip);
 	}
 }

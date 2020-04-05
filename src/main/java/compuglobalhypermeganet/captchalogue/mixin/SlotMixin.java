@@ -37,12 +37,7 @@ import net.minecraft.util.Identifier;
 //@Mixin(ContainerScreen.class)
 @Mixin(Slot.class)
 public class SlotMixin implements ISlotMixin {
-	/*@Inject(at = @At(value="INVOKE", shift=At.Shift.AFTER, target="Lnet/minecraft/container/Slot;getStack()Lnet/minecraft/item/ItemStack;"), method = "drawSlot(Lnet/minecraft/container/slot;)V")
-	private void init(CallbackInfo info) {
-		throw new RuntimeException("called getStack");
-	}*/
-	
-	@Shadow @Final private int invSlot;
+	@Shadow @Final private int invSlot; // don't use directly. use captchalogue_getSlotNum. see comment on captchalogue_getSlotNum.
 	@Shadow @Final public Inventory inventory;
 	
 	@Unique private int originalX;
@@ -50,6 +45,8 @@ public class SlotMixin implements ISlotMixin {
 	
 	@Shadow @Mutable public int xPosition;
 	@Shadow @Mutable public int yPosition;
+	
+	@Shadow public ItemStack getStack() {return null;}
 	
 	@Override public void captchalogue_setPosition(int x, int y) {xPosition = x; yPosition = y;}
 	@Override public int captchalogue_getOriginalXPosition() {return originalX;}
@@ -68,17 +65,30 @@ public class SlotMixin implements ISlotMixin {
 	
 	@Override
 	public int captchalogue_getSlotNum() {
+		// CreativeInventoryScreen.CreativeSlot uses proxy slots. They proxy to the correct slot, but the invSlot field doesn't match the base slot.
+		// So we have to find out what the base slot's real index is.
+		if(this instanceof CreativeSlotMixin)
+			return ((ISlotMixin)((CreativeSlotMixin)this).captchalogue_getBaseSlot()).captchalogue_getSlotNum();
 		return invSlot;
 	}
 	
 	@Unique
 	private boolean captchalogue_isPlayerSlot() {
-		return inventory instanceof PlayerInventory && invSlot < ((PlayerInventory)inventory).main.size();
+		return inventory instanceof PlayerInventory && captchalogue_getSlotNum() < ((PlayerInventory)inventory).main.size();
 	}
 	
 	@Inject(at = @At(value="HEAD"), method="canTakeItems(Lnet/minecraft/entity/player/PlayerEntity;)Z", cancellable=true)
 	private void blockTakeItemsNonModusSlots(CallbackInfoReturnable<Boolean> info) {
-		if(captchalogue_isPlayerSlot()) {
+		if(inventory instanceof PlayerInventory) {
+			
+			// CreativeInventoryScreen won't allow you to click on a slot unless canTakeItems returns true.
+			// This prevents the player from inserting anything into a queue or stack modus on the creative inventory screen.
+			// Workaround: return true (default) from canTakeItems on creative inventory slots.
+			if(this instanceof CreativeSlotMixin && this.getStack().isEmpty()) {
+				return;
+			}
+			
+			int invSlot = captchalogue_getSlotNum();
 			if (invSlot == CaptchalogueMod.MODUS_SLOT)
 				return;
 			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canTakeFromSlot(InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(invSlot))) {
@@ -89,7 +99,8 @@ public class SlotMixin implements ISlotMixin {
 	
 	@Inject(at = @At(value="HEAD"), method="canInsert(Lnet/minecraft/item/ItemStack;Z)Z", cancellable=true)
 	private void blockInsertIntoNonModusSlots(ItemStack item, CallbackInfoReturnable<Boolean> info) {
-		if(captchalogue_isPlayerSlot()) {
+		if(inventory instanceof PlayerInventory) {
+			int invSlot = captchalogue_getSlotNum();
 			if (invSlot == CaptchalogueMod.MODUS_SLOT) {
 				if (!ModusRegistry.isModus(item))
 					info.setReturnValue(false);
@@ -101,54 +112,11 @@ public class SlotMixin implements ISlotMixin {
 		}
 	}
 	
-	/*@Inject(at = @At(value="HEAD"), method="getStack()Lnet/minecraft/item/ItemStack;", cancellable=true)
-	private void overrideGetStack(CallbackInfoReturnable<ItemStack> info) {
-		if(inventory instanceof PlayerInventory) {
-			info.setReturnValue(((IPlayerInventoryMixin)inventory).getFetchModus().getStackInSlot(invSlot));
-		}
-	}*/
-	
-	// TODO: remove unused hook
-	/*
-	@Inject(at = @At(value="HEAD"), method="setStack(Lnet/minecraft/item/ItemStack;)V", cancellable=true)
-	private void overrideSetStack(ItemStack stack, CallbackInfo info) {
-		if (captchalogue_isPlayerSlot()) {
-			if(container != null)
-				((IContainerMixin)container).captchalogue_onSlotStackChanging((Slot)(Object)this, stack);
-
-			if (FetchModusType.isProcessingPacket.get())
-				return; // When the server is sending us the inventory state, no silly business - just replicate exactly what the server says.
-
-			if (invSlot == CaptchalogueMod.MODUS_SLOT) {
-				return;
-			}
-			if (((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, stack))
-				info.cancel();
-		}
-	}*/
-	
-	// In one case - where you click on a take-able, non-insertable slot and you are holding the same item - Minecraft will
-	// directly update the item stack count without calling setStack.
-	// markDirty is still called afterwards, so we hook that.
-	// TODO: maybe we should wait until markDirty to move ANY items to their fetchModus locations? That might also fix dragging? But other mods don't call markDirty...
-	// TODO: remove unused hook
-	/*@Inject(at = @At(value="HEAD"), method="markDirty()V")
-	private void onMarkDirty(CallbackInfo info) {
-		if (captchalogue_isPlayerSlot()) {
-			if (invSlot == CaptchalogueMod.MODUS_SLOT)
-				return;
-			if (inventory.getInvStack(invSlot).isEmpty()) {
-				// This call might be redundant, or it might not...
-				((IPlayerInventoryMixin)inventory).getFetchModus().setStackInSlot((PlayerInventory)inventory, invSlot, ItemStack.EMPTY);
-			}
-		}
-	}*/
-	
 	@Inject(at = @At(value="HEAD"), method="getBackgroundSprite()Lcom/mojang/datafixers/util/Pair;", cancellable=true)
 	@Environment(EnvType.CLIENT)
 	public void getBackgroundSprite(CallbackInfoReturnable<Pair<Identifier, Identifier>> info) {
-		if (captchalogue_isPlayerSlot()) {
-			if(invSlot == CaptchalogueMod.MODUS_SLOT) {
+		if (inventory instanceof PlayerInventory) {
+			if(captchalogue_getSlotNum() == CaptchalogueMod.MODUS_SLOT) {
 				info.setReturnValue(new Pair<Identifier, Identifier>(SpriteAtlasTexture.BLOCK_ATLAS_TEX, CaptchalogueMod.MODUS_SLOT_BG_IMAGE));
 			}
 		}

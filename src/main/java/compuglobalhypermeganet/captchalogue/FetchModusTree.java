@@ -354,31 +354,7 @@ public class FetchModusTree extends FetchModusType {
 		public void onBeforeDraw(IContainerScreenMixin contScreen) {
 			this.contScreen = contScreen; // XXX hacky place to initialize this!
 			
-			// TODO: don't constantly recalculate layout
-			/*if(++forceRecalcFrames >= 120) {
-				forceRecalcFrames = 0;
-				maybeChanged = true;
-			}*/
-			
-			/*
-			maybeChanged |= ((IContainerMixin)cont).captchalogue_haveChanges();
-			
-			if(maybeChanged) {
-				System.out.println("Tree modus refresh");
-				if(!inv.getPlayer().world.isClient())
-					tree.dropEmptySlotChildren();
-				tree.refreshNodeTree();
-				
-				if (tree.root != null) {
-					// 18 pixels on the left for the modus slot
-					// 18 pixels on the right to account for the slot size. 2 pixels on the left for borders.
-					calculateLayoutTopDown(tree.root, (int)area.y+5, (float)area.x + 18 + 2, (float)(area.x + area.width - 18 - SCROLLBAR_WIDTH));
-				}
-				
-				maybeChanged = false;
-			}*/
-			
-			// TODO: don't recalculate every frame?
+			// TODO: don't recalculate layout every frame
 			if (invState.tree.root != null) {
 				// 18 pixels on the left for the modus slot
 				// 18 pixels on the right to account for the slot size. 2 pixels on the left for borders.
@@ -610,7 +586,8 @@ public class FetchModusTree extends FetchModusType {
 		}
 		
 		@Override public boolean hasCustomInsert() {return true;}
-		@Override public void insert(ItemStack stack) {
+		@Override public void insert(ItemStack stack, boolean allowViolentExpulsion) {
+			// note: tree modus doesn't do violent expulsion
 			if(stack.isEmpty())
 				return;
 			
@@ -706,7 +683,6 @@ public class FetchModusTree extends FetchModusType {
 		public void afterPossibleInventoryChange(long changedSlotMask, boolean serverSync) {
 			if (!serverSync)
 				tree.dropEmptySlotChildren();
-			System.out.println("TreeModus afterPossibleInvenotryCharge "+changedSlotMask+" "+serverSync);
 			tree.refreshNodeTree();
 			if (!serverSync)
 				tree.rewriteUnderlyingInventory();
@@ -725,11 +701,11 @@ public class FetchModusTree extends FetchModusType {
 					// right-click deposits one item
 					ItemStack depositStack = plinv.getCursorStack().copy();
 					depositStack.setCount(1);
-					insert(depositStack);
+					insert(depositStack, true);
 					if (depositStack.getCount() == 0)
 						plinv.getCursorStack().decrement(1);
 				} else {
-					insert(plinv.getCursorStack());
+					insert(plinv.getCursorStack(), true);
 				}
 				return true;
 
@@ -759,6 +735,5 @@ public class FetchModusTree extends FetchModusType {
 		public FetchModusGuiState createGuiState(Container cont) {
 			return new GuiState(cont, inv, isRootMode);
 		}
-		
 	}
 }

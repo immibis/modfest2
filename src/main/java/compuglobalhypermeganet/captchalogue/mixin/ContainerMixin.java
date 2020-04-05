@@ -50,25 +50,33 @@ public abstract class ContainerMixin implements IContainerMixin {
 		for(int k = startIndex; k != endIndex; k += slotIncrement) {
 			Slot slot = slots.get(k);
 			if(slot.inventory instanceof PlayerInventory) {
+				
+				if(((IPlayerInventoryMixin)slot.inventory).captchalogue_acceptAsModus(stack)) {
+					stack.setCount(0);
+					info.setReturnValue(Boolean.TRUE);
+					return;
+				}
+				
 				FetchModusState modus = ((IPlayerInventoryMixin)slot.inventory).getFetchModus();
 				if(!modus.hasCustomInsert())
 					return; // If the player's fetch modus doesn't have a custom insert function, then don't override anything
 				PlayerInventory plinv = (PlayerInventory)slot.inventory;
 				int originalCount = stack.getCount();
-				modus.insert(stack);
-				
-				// Try all remaining slots other than the player's inventory.
-				// This assumes only one player inventory is involved. Might not be the case in rare cases, e.g. Chicken Chests.
-				// TODO: this code can probably be improved. We should pass consecutive slot ranges to recursive insertItem!
-				for (; k != endIndex && !stack.isEmpty(); k += slotIncrement) {
-					slot = slots.get(k);
-					if (slot.inventory == plinv)
-						continue;
-					try {
-						recursive = true;
-						insertItem(stack, k, k+1, false);
-					} finally {
-						recursive = false;
+				modus.insert(stack, true);
+				if(!stack.isEmpty()) {
+					// Try all remaining slots other than the player's inventory.
+					// This assumes only one player inventory is involved. Might not be the case in rare cases, e.g. Chicken Chests.
+					// TODO: this code can probably be improved. We should pass consecutive slot ranges to recursive insertItem!
+					for (; k != endIndex && !stack.isEmpty(); k += slotIncrement) {
+						slot = slots.get(k);
+						if (slot.inventory == plinv)
+							continue;
+						try {
+							recursive = true;
+							insertItem(stack, k, k+1, false);
+						} finally {
+							recursive = false;
+						}
 					}
 				}
 				
@@ -151,8 +159,6 @@ public abstract class ContainerMixin implements IContainerMixin {
 			return;
 		}
 		
-		Container this_ = (Container)(Object)this;
-		
 		if(slotId < 0 || slotId >= slots.size())
 			return;
 		
@@ -172,9 +178,9 @@ public abstract class ContainerMixin implements IContainerMixin {
 			}*/
 			return;
 		}
-		PlayerInventory inv = (PlayerInventory)slot.inventory;
+		//PlayerInventory inv = (PlayerInventory)slot.inventory;
 		int slotIndex = ((ISlotMixin)slot).captchalogue_getSlotNum();
-		FetchModusState modus = ((IPlayerInventoryMixin)inv).getFetchModus();
+		//FetchModusState modus = ((IPlayerInventoryMixin)inv).getFetchModus();
 
 		if(slotIndex < 0 || slotIndex >= 36 || slotIndex == CaptchalogueMod.MODUS_SLOT) {
 			/*

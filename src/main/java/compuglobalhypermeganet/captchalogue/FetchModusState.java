@@ -1,5 +1,7 @@
 package compuglobalhypermeganet.captchalogue;
 
+import java.util.List;
+
 import compuglobalhypermeganet.CaptchalogueMod;
 import net.minecraft.container.Container;
 import net.minecraft.container.SlotActionType;
@@ -15,7 +17,7 @@ public abstract class FetchModusState {
 	public abstract boolean canTakeFromSlot(int slot);
 
 	public abstract boolean hasCustomInsert();
-	public abstract void insert(ItemStack stack);
+	public abstract void insert(ItemStack stack, boolean allowViolentExpulsion);
 
 	public boolean affectsHotbarRendering() {
 		return false;
@@ -44,5 +46,8 @@ public abstract class FetchModusState {
 
 	public FetchModusGuiState createGuiState(Container cont) {
 		return null;
+	}
+
+	public void fiddleWithItemRenderTooltip(List<String> tooltip) {
 	}
 }

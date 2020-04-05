@@ -16,7 +16,9 @@
     "ClientPlayNetworkHandlerMixin",
     "PlayerInventoryClientMixin",
     "InGameHudMixin",
-    "ClientPlayerInteractionManagerMixin"
+    "CreativeSlotMixin",
+    "ScreenMixin",
+    "CreativeInventoryScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

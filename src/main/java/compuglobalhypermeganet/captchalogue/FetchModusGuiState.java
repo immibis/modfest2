@@ -23,8 +23,8 @@ public abstract class FetchModusGuiState {
 	
 	public void onBeforeDraw(IContainerScreenMixin contScreen) {}
 	public void drawAdditionalBackground(Drawer d) {}
-	public void beforeDrawSlot(Slot slot, Drawer impl) {}
-	public void afterDrawSlot(Slot slot, Drawer impl) {}
+	public void beforeDrawSlot(Slot slot, Drawer d) {}
+	public void afterDrawSlot(Slot slot, Drawer d) {}
 	
 	// return 0 to force false, 1 to force true, else don't override
 	public int overridesIsPointOverSlot(Slot slot, double x, double y) {return -1;}

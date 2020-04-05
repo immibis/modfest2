@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "boat",
+  "pattern": [
+    "#  ",
+    "#/#",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:iron_ingot"
+    },
+    "/": {
+      "tag": "minecraft:saplings"
+    }
+  },
+  "result": {
+    "item": "compuglobalhypermeganet:tree_leaf_fetch_modus"
+  }
+}

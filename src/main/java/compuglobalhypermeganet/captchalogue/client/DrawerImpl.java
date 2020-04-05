@@ -2,6 +2,7 @@ package compuglobalhypermeganet.captchalogue.client;
 
 import org.lwjgl.opengl.GL11;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import compuglobalhypermeganet.captchalogue.Drawer;
@@ -13,7 +14,6 @@ import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.Matrix4f;
-import net.minecraft.client.util.math.Vector4f;
 
 @Environment(EnvType.CLIENT)
 public class DrawerImpl extends Drawer {
@@ -28,8 +28,12 @@ public class DrawerImpl extends Drawer {
 	}
 	
 	Matrix4f matrix = Matrix4f.translate(0, 0, 0);
-	public void setMatrix(Matrix4f matrix) {
+	float offsetX = 0, offsetY = 0;
+	// matrix used for drawing, offset used for glScissor
+	public void setMatrix(Matrix4f matrix, float offsetX, float offsetY) {
 		this.matrix = matrix;
+		this.offsetX = offsetX;
+		this.offsetY = offsetY;
 	}
 
 	@Override
@@ -58,7 +62,7 @@ public class DrawerImpl extends Drawer {
 		MinecraftClient mc = MinecraftClient.getInstance();
 		double scale = mc.getWindow().getScaleFactor();
 		
-		Vector4f v = new Vector4f(x1, y1, 0, 1);
+		/*Vector4f v = new Vector4f(x1, y1, 0, 1);
 		v.transform(matrix);
 		x1 = (int)(v.getX() * scale);
 		y1 = (int)(v.getY() * scale);
@@ -66,7 +70,17 @@ public class DrawerImpl extends Drawer {
 		v = new Vector4f(x2, y2, 0, 1);
 		v.transform(matrix);
 		x2 = (int)(v.getX() * scale);
-		y2 = (int)(v.getY() * scale);
+		y2 = (int)(v.getY() * scale);*/
+		
+		x1 += offsetX;
+		x2 += offsetX;
+		y1 += offsetY;
+		y2 += offsetY;
+		
+		x1 *= scale;
+		x2 *= scale;
+		y1 *= scale;
+		y2 *= scale;
 		
 		GL11.glPushAttrib(GL11.GL_SCISSOR_BIT);
 		GL11.glEnable(GL11.GL_SCISSOR_TEST);
@@ -76,5 +90,15 @@ public class DrawerImpl extends Drawer {
 	@Override
 	public void unrestrictRendering() {
 		GL11.glPopAttrib();
+	}
+	
+	@Override
+	public void enableBlend() {
+		GlStateManager.enableBlend();
+	}
+	
+	@Override
+	public void disableBlend() {
+		GlStateManager.disableBlend();
 	}
 }

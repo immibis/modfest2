@@ -1,0 +1,6 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "compuglobalhypermeganet:stack_hashtable_fetch_modus"
+    }
+}

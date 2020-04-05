@@ -43,7 +43,7 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 	private static final long SERVER_CHANGED_SLOTS_FLAG = 0x4000000000000000L;
 	
 	@Unique
-	public void captchalogue_afterStackChange(int slot) {
+	private void captchalogue_afterStackChange(int slot) {
 		if(slot >= 0 && slot < 36) { // including modus slot
 
 			// all cases set some flag which should lead to captchalogue_afterInventoryChanged being called.
@@ -111,8 +111,8 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 		}
 	}
 	
-	@Unique
-	private boolean captchalogue_acceptAsModus(ItemStack stack) {
+	@Override
+	public boolean captchalogue_acceptAsModus(ItemStack stack) {
 		PlayerInventory this_ = (PlayerInventory)(Object)this;
 		if (this_.getInvStack(CaptchalogueMod.MODUS_SLOT).isEmpty() && ModusRegistry.isModus(stack)) {
 			this_.setInvStack(CaptchalogueMod.MODUS_SLOT, stack.copy());
@@ -137,10 +137,12 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			// modus.insert updates the stack's count.
 			// Slot number is ignored!
 			int previousCount = stack.getCount();
-			modus.insert(stack);
+			modus.insert(stack, true);
 			info.setReturnValue(stack.getCount() < previousCount);
 		}
 	}
+	
+	
 	@Inject(at = @At("HEAD"), method="offerOrDrop(Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;)V", cancellable=true)
 	public void overrideOfferOrDrop(World world, ItemStack stack, CallbackInfo info) {
 		if (!world.isClient()) {
@@ -156,11 +158,12 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 			
 			FetchModusState modus = getFetchModus();
 			if (modus.hasCustomInsert()) {
-				modus.insert(stack);
+				modus.insert(stack, true);
 				if (stack.getCount() == 0) {
 					info.cancel();
 				}
-				// Proceed to the standard implementation; this may 
+				// Proceed to the standard implementation; this will drop excess items that don't fit (it won't CaptchalogueMod.launchExcessItems them)
+				// Custom insert() may call CaptchalogueMod.launchExcessItems in which case the stack is now empty.
 			}
 		}
 	}

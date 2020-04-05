@@ -6,8 +6,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.FetchModusType;
 import compuglobalhypermeganet.captchalogue.mixin_support.IClickWindowC2SPacketMixin;
+import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -36,6 +38,14 @@ public class ServerPlayNetworkHandlerMixin {
 	public void extendOnClickWindow(ClickWindowC2SPacket packet, CallbackInfo info) {
 		if(player.getServerWorld().getServer().isOnThread()) { // otherwise the method just delegates to the main thread and doesn't really do anything
 			FetchModusType.currentPacketFetchModusState.set(((IClickWindowC2SPacketMixin)packet).captchalogue_getFetchModusState());
+		}
+	}
+	
+	@Inject(at = @At("HEAD"), method="onChatMessage(Lnet/minecraft/network/packet/c2s/play/ChatMessageC2SPacket;)V")
+	public void extendOnChatMessage(ChatMessageC2SPacket packet, CallbackInfo info) {
+		if(player.getServerWorld().getServer().isOnThread()) { // otherwise the method just delegates to the main thread and doesn't really do anything
+			// TODO: only trigger the modus if the message isn't blocked, etc. Maybe save the message and player reference here, and wait until server.broadcastMessage is called before assuming it actually went through.
+			CaptchalogueMod.triggerHashCodesForChatMessage(packet.getChatMessage(), player);
 		}
 	}
 }

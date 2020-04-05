@@ -44,7 +44,7 @@ public class FetchModusStack extends FetchModusType {
 		
 		@Override
 		public void initialize() {
-			compactItemsToLowerIndices(inv, 0);
+			compactItemsToLowerIndices(inv, 0, true);
 		}
 		
 		@Override
@@ -66,7 +66,10 @@ public class FetchModusStack extends FetchModusType {
 		}
 		
 		@Override
-		public void insert(ItemStack stack) {
+		public void insert(ItemStack stack, boolean allowViolentExpulsion) {
+			if(stack.isEmpty())
+				return;
+			
 			ItemStack curStack0 = inv.getInvStack(0);
 			if(!curStack0.isEmpty() && Container.canStacksCombine(curStack0, stack)) {
 				int ntransfer = Math.min(stack.getCount(), curStack0.getMaxCount() - curStack0.getCount());
@@ -90,6 +93,16 @@ public class FetchModusStack extends FetchModusType {
 					return;
 				}
 			}
+			
+			if (allowViolentExpulsion) {
+				// no free slots? launch whatever is at the bottom of the stack, then push the new item.
+				ItemStack launchItems = inv.getInvStack(inv.getNumSlots() - 1);
+				if(launchItems.isEmpty())
+					throw new AssertionError("unreachable - we have no empty slots, not even this one");
+				inv.setInvStack(inv.getNumSlots()-1, ItemStack.EMPTY);
+				CaptchalogueMod.launchExcessItems(inv.getPlayer(), launchItems);
+				insert(stack, true); // retry. Violent expulsion shouldn't happen again, but pass false just in case, to prevent infinite recursion.
+			}
 		}
 
 		@Override
@@ -100,7 +113,7 @@ public class FetchModusStack extends FetchModusType {
 		@Override
 		public void afterPossibleInventoryChange(long changedSlotMask, boolean serverSync) {
 			// Brute force! :)
-			if (!serverSync)
+			if (!serverSync || inv.getInvStack(0).isEmpty())
 				initialize();
 		}
 
@@ -129,11 +142,11 @@ public class FetchModusStack extends FetchModusType {
 						// insert one item. TODO: de-duplicate this code with FetchModusQueue
 						ItemStack one = cursor.copy();
 						one.setCount(1);
-						insert(one);
+						insert(one, true);
 						if(one.isEmpty())
 							cursor.decrement(1);
 					} else {
-						insert(cursor);
+						insert(cursor, true);
 					}
 				}
 				return true;
