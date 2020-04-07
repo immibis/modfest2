@@ -18,7 +18,8 @@
     "InGameHudMixin",
     "CreativeSlotMixin",
     "ScreenMixin",
-    "CreativeInventoryScreenMixin"
+    "CreativeInventoryScreenMixin",
+    "SlotMixinClient"
   ],
   "injectors": {
     "defaultRequire": 1
