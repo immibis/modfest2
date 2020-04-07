@@ -14,7 +14,7 @@ import net.minecraft.item.ItemStack;
 
 @Mixin(InGameHud.class)
 public class InGameHudMixin {
-	@ModifyArg(at = @At(value="INVOKE", target="renderHotbarItem(IIFLnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/item/ItemStack;)V"), method="renderHotbar(F)V", index=4)
+	@ModifyArg(at = @At(value="INVOKE", target="Lnet/minecraft/client/gui/hud/InGameHud;renderHotbarItem(IIFLnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/item/ItemStack;)V"), method="renderHotbar(F)V", index=4)
 	public ItemStack overrideRenderHotbarItem(int x, int y, float partialTicks, PlayerEntity player, ItemStack stack) {
 		FetchModusState modus = ((IPlayerInventoryMixin)player.inventory).getFetchModus();
 		if (modus.affectsHotbarRendering() && !stack.isEmpty()) {

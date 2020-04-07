@@ -15,6 +15,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ingame.ContainerScreen;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeContainer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
@@ -107,6 +108,7 @@ public class FetchModusMemory extends FetchModusType {
 		
 		// Note: A match happens if two identical item stacks are revealed, even if they're not actually the same underlying inventory slot.
 		// Otherwise it would be too confusing for the player.
+		// Also note: you can reveal two item stacks with different stack sizes or NBT, and it still counts as a match.
 		public boolean haveMatch(PlayerInventory inv) {
 			if (revealedSlot1 < 0 || revealedSlot2 < 0)
 				return false;
@@ -122,7 +124,14 @@ public class FetchModusMemory extends FetchModusType {
 			if (isNormalSlot(slotIndex) || slotIndex == CaptchalogueMod.MODUS_SLOT)
 				return false; // no override
 			
-			GuiState state = (GuiState)((IContainerMixin)screen.getContainer()).getFetchModusGuiState();
+			// Creative screen proxies to the player inventory container... except for drawing... sigh...
+			// TODO: move this out to this function's caller
+			Container cont;
+			if(screen.getContainer() instanceof CreativeContainer)
+				cont = inv.player.playerContainer;
+			else
+				cont = screen.getContainer();
+			GuiState state = (GuiState)((IContainerMixin)cont).getFetchModusGuiState();
 			
 			// really hacky place to put the timeout check!
 			if (state.timeoutAt != 0 && System.nanoTime() - state.timeoutAt > 0) {

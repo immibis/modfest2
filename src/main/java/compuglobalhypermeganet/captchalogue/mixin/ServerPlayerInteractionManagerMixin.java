@@ -17,7 +17,7 @@ import net.minecraft.world.World;
 public class ServerPlayerInteractionManagerMixin {
 	// Item use functions generally don't call setInvStack if they take items from an existing stack. Sometimes not even if it becomes empty.
 	// So we have to consider that the inventory could have changed any time the player right-clicks.
-	@Inject(at=@At("RETURN"), method="interactBlock(Lnet/minecraft/player/entity/PlayerEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/Hand;Lnet/minecraft/util/hit/BLockHitResult;)Lnet/minecraft/util/ActionResult;")
+	@Inject(at=@At("RETURN"), method="interactBlock(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/Hand;Lnet/minecraft/util/hit/BlockHitResult;)Lnet/minecraft/util/ActionResult;")
 	public void afterInteractBlock(PlayerEntity player, World world, ItemStack stack, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> info) {
 		// Trigger hooks
 		player.inventory.setInvStack(player.inventory.selectedSlot, player.inventory.getInvStack(player.inventory.selectedSlot));

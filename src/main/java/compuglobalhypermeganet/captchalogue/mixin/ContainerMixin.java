@@ -87,7 +87,7 @@ public abstract class ContainerMixin implements IContainerMixin {
 		// If no player inventories are involved, don't override anything
 	}
 	
-	@Inject(at = @At("HEAD"), method = "onSlotClick(IILnet/minecraft/contanier/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/item/ItemStack;", cancellable=true)
+	@Inject(at = @At("HEAD"), method = "onSlotClick(IILnet/minecraft/container/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/item/ItemStack;", cancellable=true)
 	public void overrideSlotClick(int slotId, int clickData, SlotActionType actionType, PlayerEntity playerEntity, CallbackInfoReturnable<ItemStack> info) {
 		Container this_ = (Container)(Object)this;
 		
@@ -130,7 +130,8 @@ public abstract class ContainerMixin implements IContainerMixin {
 		return null;
 	}
 	
-	@Inject(at = @At(value="INVOKE", target="Lnet/minecraft/container/Container;sendContentUpdates()V"), method = "onSlotClick(IILnet/minecraft/contanier/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/item/ItemStack;")
+	/*
+	@Inject(at = @At(value="INVOKE", target="Lnet/minecraft/container/Container;sendContentUpdates()V"), method = "onSlotClick(IILnet/minecraft/container/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/item/ItemStack;")
 	public void beforeSendContentUpdateInSlotClick(int slotId, int clickData, SlotActionType actionType, PlayerEntity playerEntity, CallbackInfoReturnable<ItemStack> info) {
 		if(true) return;
 		// TODO: remove no-longer-used hook
@@ -146,9 +147,9 @@ public abstract class ContainerMixin implements IContainerMixin {
 			//FetchModusState modus = ((IPlayerInventoryMixin)inv).getFetchModus();
 			//modus.afterPossibleInventoryChange((Container)(Object)this, new InventoryWrapper.PlayerInventorySkippingModusSlot(inv));
 		}
-	}
+	}*/
 	
-	@Inject(at = @At("RETURN"), method = "onSlotClick(IILnet/minecraft/contanier/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/item/ItemStack;")
+	@Inject(at = @At("RETURN"), method = "onSlotClick(IILnet/minecraft/container/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/item/ItemStack;")
 	public void afterSlotClick(int slotId, int clickData, SlotActionType actionType, PlayerEntity playerEntity, CallbackInfoReturnable<ItemStack> info) {
 		
 		// not sure whether this gets called if the click is overridden by us. probably not.

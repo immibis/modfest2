@@ -10,22 +10,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.mojang.datafixers.util.Pair;
-
 import compuglobalhypermeganet.CaptchalogueMod;
 import compuglobalhypermeganet.captchalogue.InventoryWrapper;
 import compuglobalhypermeganet.captchalogue.ModusRegistry;
+import compuglobalhypermeganet.captchalogue.mixin_support.ICreativeSlotMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.container.Container;
 import net.minecraft.container.Slot;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 
 /**
  * Captchalogue works by blocking all player slots except for the one we can pull items from.
@@ -67,8 +62,8 @@ public class SlotMixin implements ISlotMixin {
 	public int captchalogue_getSlotNum() {
 		// CreativeInventoryScreen.CreativeSlot uses proxy slots. They proxy to the correct slot, but the invSlot field doesn't match the base slot.
 		// So we have to find out what the base slot's real index is.
-		if(this instanceof CreativeSlotMixin)
-			return ((ISlotMixin)((CreativeSlotMixin)this).captchalogue_getBaseSlot()).captchalogue_getSlotNum();
+		if(this instanceof ICreativeSlotMixin)
+			return ((ISlotMixin)((ICreativeSlotMixin)this).captchalogue_getBaseSlot()).captchalogue_getSlotNum();
 		return invSlot;
 	}
 	
@@ -84,7 +79,7 @@ public class SlotMixin implements ISlotMixin {
 			// CreativeInventoryScreen won't allow you to click on a slot unless canTakeItems returns true.
 			// This prevents the player from inserting anything into a queue or stack modus on the creative inventory screen.
 			// Workaround: return true (default) from canTakeItems on creative inventory slots.
-			if(this instanceof CreativeSlotMixin && this.getStack().isEmpty()) {
+			if(this instanceof ICreativeSlotMixin && this.getStack().isEmpty()) {
 				return;
 			}
 			
@@ -97,7 +92,7 @@ public class SlotMixin implements ISlotMixin {
 		}
 	}
 	
-	@Inject(at = @At(value="HEAD"), method="canInsert(Lnet/minecraft/item/ItemStack;Z)Z", cancellable=true)
+	@Inject(at = @At(value="HEAD"), method="canInsert(Lnet/minecraft/item/ItemStack;)Z", cancellable=true)
 	private void blockInsertIntoNonModusSlots(ItemStack item, CallbackInfoReturnable<Boolean> info) {
 		if(inventory instanceof PlayerInventory) {
 			int invSlot = captchalogue_getSlotNum();
@@ -108,16 +103,6 @@ public class SlotMixin implements ISlotMixin {
 			}
 			if (!((IPlayerInventoryMixin)inventory).getFetchModus().canInsertToSlot(InventoryWrapper.PlayerInventorySkippingModusSlot.fromUnderlyingSlotIndex(invSlot))) {
 				info.setReturnValue(false);
-			}
-		}
-	}
-	
-	@Inject(at = @At(value="HEAD"), method="getBackgroundSprite()Lcom/mojang/datafixers/util/Pair;", cancellable=true)
-	@Environment(EnvType.CLIENT)
-	public void getBackgroundSprite(CallbackInfoReturnable<Pair<Identifier, Identifier>> info) {
-		if (inventory instanceof PlayerInventory) {
-			if(captchalogue_getSlotNum() == CaptchalogueMod.MODUS_SLOT) {
-				info.setReturnValue(new Pair<Identifier, Identifier>(SpriteAtlasTexture.BLOCK_ATLAS_TEX, CaptchalogueMod.MODUS_SLOT_BG_IMAGE));
 			}
 		}
 	}

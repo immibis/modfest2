@@ -13,10 +13,15 @@ import java.util.function.Supplier;
 import compuglobalhypermeganet.captchalogue.FetchModusHashtable;
 import compuglobalhypermeganet.captchalogue.FetchModusState;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.fabricmc.fabric.api.loot.v1.FabricLootPoolBuilder;
 import net.fabricmc.fabric.api.loot.v1.event.LootTableLoadingCallback;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeContainer;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -39,6 +44,8 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -62,12 +69,29 @@ public class CaptchalogueMod implements ModInitializer {
 				}
 			});
 	
+	private static class ItemWithCreativeDupeWarning extends Item {
+		public ItemWithCreativeDupeWarning(Item.Settings settings) {
+			super(settings);
+		}
+		
+		@Override
+		@Environment(EnvType.CLIENT)
+		public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			MinecraftClient mc = MinecraftClient.getInstance();
+			if(mc != null && mc.player != null && mc.player.container instanceof CreativeContainer) {
+				tooltip.add(new TranslatableText("item.compuglobalhypermeganet.hashtable_fetch_modus.creative_mode_warning.1"));
+				tooltip.add(new TranslatableText("item.compuglobalhypermeganet.hashtable_fetch_modus.creative_mode_warning.2"));
+			}
+		}
+	}
+	
 	// basic structures (queuestack is still basic)
 	public static final Item itemQueueFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemStackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(64)); // Stack moduses stack, because lame pun.
 	public static final Item itemArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueuestackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemHashtableFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemTreeLeafFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemTreeRootFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	
@@ -81,10 +105,10 @@ public class CaptchalogueMod implements ModInitializer {
 	// array of hashtables is functionally equivalent to hashtable of arrays
 	
 	// hashtables with collision avoidance
-	public static final Item itemArrayHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemStackHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemQueueHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemQueuestackHashtableFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemArrayHashtableFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemStackHashtableFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemQueueHashtableFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemQueuestackHashtableFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	
 	public static final List<Item> DEFAULT_MODUSES = Arrays.asList(
 		itemStackFetchModus,
@@ -294,7 +318,7 @@ public class CaptchalogueMod implements ModInitializer {
 	public static void launchExcessItems(PlayerEntity player, ItemStack stack) {
 		if(!player.world.isClient() && !stack.isEmpty()) {
 			final int RANGE = 10;
-			Vec3d playerPos = player.getPos().add(0, player.getEyeHeight(player.getPose()), 0);
+			Vec3d playerPos = player.getPos().add(0, player.getStandingEyeHeight(), 0);
 			Box searchBox = new Box(playerPos.getX()-RANGE, playerPos.getY()-RANGE, playerPos.getZ()-RANGE, playerPos.getX()+RANGE, playerPos.getY()+RANGE, playerPos.getZ()+RANGE);
 			
 			List<Entity> entsInRange = player.world.getEntities(player, searchBox, (ent) -> {

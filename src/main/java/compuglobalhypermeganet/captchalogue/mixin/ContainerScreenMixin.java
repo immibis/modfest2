@@ -26,6 +26,8 @@ import compuglobalhypermeganet.captchalogue.mixin_support.IContainerMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IContainerScreenMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import compuglobalhypermeganet.captchalogue.mixin_support.ISlotMixin;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.ContainerScreen;
 import net.minecraft.client.util.math.Matrix4f;
@@ -35,6 +37,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
 @Mixin(ContainerScreen.class)
+@Environment(EnvType.CLIENT)
 public abstract class ContainerScreenMixin extends Screen implements IContainerScreenMixin {
 	
 	// not used, just appeases the compiler
@@ -474,7 +477,7 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 	@Shadow
 	public abstract boolean isPointOverSlot(Slot slot, double x, double y);
 	
-	@Inject(at=@At("HEAD"), method="isPointOverSlot(Lnet/minecraft/container/slot;DD)Z", cancellable=true)
+	@Inject(at=@At("HEAD"), method="isPointOverSlot(Lnet/minecraft/container/Slot;DD)Z", cancellable=true)
 	public void overrideIsPointOverSlot(Slot slot, double x, double y, CallbackInfoReturnable<Boolean> info) {
 		if(unsupportedLayout)
 			return;
