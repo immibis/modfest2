@@ -483,6 +483,10 @@ public abstract class ContainerScreenMixin extends Screen implements IContainerS
 			return;
 		if(!(slot.inventory instanceof PlayerInventory))
 			return;
+		int index = ((ISlotMixin)slot).captchalogue_getSlotNum();
+		if(index < 0 || index > 35)
+			return;
+		
 		FetchModusGuiState gs = getFetchModusGuiState();
 		int val = gs.overridesIsPointOverSlot(slot, x-this.x, y-this.y);
 		if(val == 0)

@@ -15,5 +15,8 @@
 	"item.compuglobalhypermeganet.queuestack_hashtable_fetch_modus": "Fetch Modus - Queuestack Hashtable",
 	"item.compuglobalhypermeganet.array_hashtable_fetch_modus": "Fetch Modus - Array Hashtable",
 	
+	"item.compuglobalhypermeganet.hashtable_fetch_modus.creative_mode_warning.1": "Warning: Can duplicate or delete items",
+	"item.compuglobalhypermeganet.hashtable_fetch_modus.creative_mode_warning.2": "in the creative inventory menu.",
+	
 	"itemGroup.compuglobalhypermeganet.captchalogue": "Captchalogue Sylladex"
 }

@@ -11,6 +11,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import compuglobalhypermeganet.captchalogue.FetchModusHashtable;
+import compuglobalhypermeganet.captchalogue.FetchModusHashtableOfX;
 import compuglobalhypermeganet.captchalogue.FetchModusState;
 import compuglobalhypermeganet.captchalogue.mixin_support.IPlayerInventoryMixin;
 import net.fabricmc.api.EnvType;
@@ -52,6 +53,17 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
+/**
+ * Changelog:
+ * 1.0.0:
+ *   initial release
+ * 1.0.1:
+ *   Hashtable of {queue/stack/queuestack/array} can eject items via chat messages, just like the basic hashtable.
+ *   Slightly tweaked the creative bug warning and added it to the tree modus.
+ *   Fixed crash when clicking on offhand slot with a tree modus.
+ *   When the server is set to creative mode, players will always spawn with an array modus.
+ *   Items that fly out of your inventory can't go as far.
+ */
 public class CaptchalogueMod implements ModInitializer {
 	
 	public static final int MODUS_SLOT = 8;
@@ -92,8 +104,8 @@ public class CaptchalogueMod implements ModInitializer {
 	public static final Item itemArrayFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemQueuestackFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	public static final Item itemHashtableFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemTreeLeafFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
-	public static final Item itemTreeRootFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemTreeLeafFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
+	public static final Item itemTreeRootFetchModus = new ItemWithCreativeDupeWarning(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
 	
 	// minigames
 	public static final Item itemMemoryFetchModus = new Item(new Item.Settings().group(itemGroupCaptchalogue).maxCount(1));
@@ -344,7 +356,8 @@ public class CaptchalogueMod implements ModInitializer {
 				double dir = player.world.random.nextDouble()*Math.PI*2;
 				ent.setVelocity(Math.sin(dir)*SPEED, 0.2, Math.cos(dir)*SPEED);
 			} else {
-				Vec3d delta = closest.getPos().add(0, closest.getBodyY(0.5f)-closest.getY(), 0).subtract(playerPos).multiply(SPEED);
+				Vec3d delta = closest.getPos().add(0, closest.getBodyY(0.5f)-closest.getY(), 0).subtract(playerPos);
+				delta = delta.normalize().multiply(1.0).add(0, 0.2, 0);
 				ent.setVelocity(delta);
 				
 				// Too lazy to make an item projectile entity that hurts on impact and can be picked up. Just hurt the target entity directly and immediately.
@@ -387,7 +400,7 @@ public class CaptchalogueMod implements ModInitializer {
 
 	public static void triggerHashCodesForChatMessage(String message, PlayerEntity player) {
 		FetchModusState modus = ((IPlayerInventoryMixin)player.inventory).getFetchModus();
-		if(!(modus instanceof FetchModusHashtable.State))
+		if(!(modus instanceof FetchModusHashtable.State) && !(modus instanceof FetchModusHashtableOfX.State))
 			return;
 		
 		// XXX hardcoded

@@ -213,8 +213,20 @@ public class PlayerInventoryMixin implements IPlayerInventoryMixin {
 		if (!player.world.isClient()) {
 			PlayerInventory inv = (PlayerInventory)(Object)this;
 			Item modusType = CaptchalogueMod.DEFAULT_MODUSES.get(player.world.random.nextInt(CaptchalogueMod.DEFAULT_MODUSES.size()));
-			if(inv.getInvStack(CaptchalogueMod.MODUS_SLOT).isEmpty()) {
-				inv.setInvStack(CaptchalogueMod.MODUS_SLOT, new ItemStack(modusType));
+			
+			if(player.world.getServer().getDefaultGameMode().isCreative())
+				modusType = CaptchalogueMod.itemArrayFetchModus;
+			
+			// another mod might have added something to MODUS_SLOT - move it out of the way.
+			ItemStack movedStack = inv.getInvStack(CaptchalogueMod.MODUS_SLOT);
+			inv.setInvStack(CaptchalogueMod.MODUS_SLOT, new ItemStack(modusType));
+			if (!movedStack.isEmpty()) {
+				for(int k = 0; k < 36; k++) {
+					if(inv.getInvStack(k).isEmpty()) {
+						inv.setInvStack(k, movedStack);
+						break;
+					}
+				}
 			}
 		}
 	}
