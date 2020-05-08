@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.immibis.captchalogue_sylladex.mixins",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "SlotMixin",
+    "PlayerInventoryMixin",
+    "ContainerMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "ClickWindowC2SPacketMixin",
+    "ServerPlayerInteractionManagerMixin"
+  ],
+  "client": [
+    "ContainerScreenMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "PlayerInventoryClientMixin",
+    "InGameHudMixin",
+    "CreativeSlotMixin",
+    "ScreenMixin",
+    "CreativeInventoryScreenMixin",
+    "SlotMixinClient"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

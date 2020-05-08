@@ -1,32 +1,32 @@
 {
   "schemaVersion": 1,
-  "id": "compuglobalhypermeganet",
+  "id": "captchalogue_sylladex",
   "version": "${version}",
 
-  "name": "CompuGlobalHyperMegaNet",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Captchalogue Sylladex",
+  "description": "Makes your inventory harder to use, on purpose.",
   "authors": [
-    "anonymized for Modfest"
+    "immibis"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "http://immibis.com/",
+    "sources": "https://github.com/immibis/modfest2"
   },
 
-  "license": "CC0-1.0",
-  "icon": "assets/compuglobalhypermeganet/icon.png",
+  "license": "MIT",
+  "icon": "assets/captchalogue_sylladex/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "compuglobalhypermeganet.CaptchalogueMod"
+      "com.immibis.captchalogue_sylladex.CaptchalogueMod"
     ],
     "client": [
-      "compuglobalhypermeganet.CaptchalogueModClient"
+      "com.immibis.captchalogue_sylladex.CaptchalogueModClient"
     ]
   },
   "mixins": [
-    "compuglobalhypermeganet.mixins.json"
+    "captchalogue_sylladex.mixins.json"
   ],
 
   "depends": {

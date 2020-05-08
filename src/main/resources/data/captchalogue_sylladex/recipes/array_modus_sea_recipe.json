@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "boat",
+  "pattern": [
+    "...",
+    "#O#",
+    " # "
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:diamond_block"
+    },
+    "O": {
+      "item": "minecraft:conduit"
+    },
+    ".": {
+      "item": "minecraft:nautilus_shell"
+    }
+  },
+  "result": {
+    "item": "captchalogue_sylladex:array_fetch_modus"
+  }
+}

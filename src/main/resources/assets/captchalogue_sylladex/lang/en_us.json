@@ -1,0 +1,22 @@
+{
+	"item.captchalogue_sylladex.queue_fetch_modus": "Fetch Modus - Queue",
+	"item.captchalogue_sylladex.stack_fetch_modus": "Fetch Modus - Stack",
+	"item.captchalogue_sylladex.queuestack_fetch_modus": "Fetch Modus - Queuestack",
+	"item.captchalogue_sylladex.array_fetch_modus": "Fetch Modus - Array",
+	"item.captchalogue_sylladex.queue_array_fetch_modus": "Fetch Modus - Queue Array",
+	"item.captchalogue_sylladex.stack_array_fetch_modus": "Fetch Modus - Stack Array",
+	"item.captchalogue_sylladex.queuestack_array_fetch_modus": "Fetch Modus - Queuestack Array",
+	"item.captchalogue_sylladex.memory_fetch_modus": "Fetch Modus - Memory",
+	"item.captchalogue_sylladex.tree_leaf_fetch_modus": "Fetch Modus - Tree (Leaf Mode)",
+	"item.captchalogue_sylladex.tree_root_fetch_modus": "Fetch Modus - Tree (Root Mode)",
+	"item.captchalogue_sylladex.hashtable_fetch_modus": "Fetch Modus - Hashtable",
+	"item.captchalogue_sylladex.queue_hashtable_fetch_modus": "Fetch Modus - Queue Hashtable",
+	"item.captchalogue_sylladex.stack_hashtable_fetch_modus": "Fetch Modus - Stack Hashtable",
+	"item.captchalogue_sylladex.queuestack_hashtable_fetch_modus": "Fetch Modus - Queuestack Hashtable",
+	"item.captchalogue_sylladex.array_hashtable_fetch_modus": "Fetch Modus - Array Hashtable",
+	
+	"item.captchalogue_sylladex.hashtable_fetch_modus.creative_mode_warning.1": "Warning: Can duplicate or delete items",
+	"item.captchalogue_sylladex.hashtable_fetch_modus.creative_mode_warning.2": "in the creative inventory menu.",
+	
+	"itemGroup.captchalogue_sylladex.captchalogue": "Captchalogue Sylladex"
+}

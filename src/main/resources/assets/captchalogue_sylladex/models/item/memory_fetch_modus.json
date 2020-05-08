@@ -1,0 +1,6 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "captchalogue_sylladex:memory_fetch_modus"
+    }
+}

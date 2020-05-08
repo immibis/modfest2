@@ -1,0 +1,6 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "captchalogue_sylladex:tree_leaf_fetch_modus"
+    }
+}

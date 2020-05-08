@@ -1,0 +1,8 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients": [
+		{"item": "captchalogue_sylladex:tree_leaf_fetch_modus"}
+	],
+	"result": {"item": "captchalogue_sylladex:tree_root_fetch_modus"}
+}
+

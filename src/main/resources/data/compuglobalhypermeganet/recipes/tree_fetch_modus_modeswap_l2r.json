@@ -1,8 +1,0 @@
-{
-	"type": "minecraft:crafting_shapeless",
-	"ingredients": [
-		{"item": "compuglobalhypermeganet:tree_leaf_fetch_modus"}
-	],
-	"result": {"item": "compuglobalhypermeganet:tree_root_fetch_modus"}
-}
-

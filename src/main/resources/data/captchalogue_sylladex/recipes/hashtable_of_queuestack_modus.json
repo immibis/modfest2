@@ -1,0 +1,10 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients": [
+		{"item": "captchalogue_sylladex:hashtable_fetch_modus"},
+		{"item": "captchalogue_sylladex:queuestack_fetch_modus"},
+		{"item": "minecraft:diamond"}
+	],
+	"result": {"item": "captchalogue_sylladex:queuestack_hashtable_fetch_modus"}
+}
+

@@ -1,0 +1,6 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "captchalogue_sylladex:queuestack_array_fetch_modus"
+    }
+}

@@ -1,0 +1,9 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients": [
+		{"item": "captchalogue_sylladex:stack_fetch_modus"},
+		{"item": "captchalogue_sylladex:array_fetch_modus"}
+	],
+	"result": {"item": "captchalogue_sylladex:stack_array_fetch_modus"}
+}
+
